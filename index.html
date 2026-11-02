@@ -1,0 +1,678 @@
+```html
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senti - Asistente Médico Inclusivo y Sensorial</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Plus Jakarta Sans -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f1f5f9;
+            color: #2C3E35;
+        }
+        .senti-cream {
+            background-color: #FBF9F5;
+        }
+        .senti-sage {
+            background-color: #4A7C59;
+        }
+        .senti-sage-text {
+            color: #4A7C59;
+        }
+        .pulse-sos {
+            animation: pulse-ring 2s infinite;
+        }
+        @keyframes pulse-ring {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(217, 83, 79, 0.6); }
+            70% { transform: scale(1); box-shadow: 0 0 0 25px rgba(217, 83, 79, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(217, 83, 79, 0); }
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center py-0 sm:py-6">
+
+    <!-- CONTENEDOR PRINCIPAL TIPO APLICACIÓN MÓVIL -->
+    <div id="app-container" class="w-full sm:max-w-md bg-[#FBF9F5] shadow-2xl rounded-none sm:rounded-3xl flex flex-col h-screen sm:h-[880px] relative overflow-hidden border border-slate-200">
+
+        <!-- MENÚ LATERAL (DRAWER) -->
+        <div id="drawer-overlay" class="absolute inset-0 bg-black/40 z-50 hidden transition-opacity" onclick="toggleMenu()"></div>
+        <div id="sidebar" class="absolute inset-y-0 left-0 z-50 w-72 bg-[#2C3E35] text-white transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col shadow-2xl">
+            <div class="p-5 border-b border-slate-700 flex items-center justify-between">
+                <div class="flex items-center space-x-2.5">
+                    <div class="w-9 h-9 rounded-xl bg-[#4A7C59] flex items-center justify-center text-white font-bold text-lg">S</div>
+                    <div>
+                        <span class="font-bold text-base tracking-wide block">Senti Menú</span>
+                        <span id="drawer-run-text" class="text-[11px] text-slate-300">RUN: --</span>
+                    </div>
+                </div>
+                <button onclick="toggleMenu()" class="text-slate-300 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <nav class="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto text-sm">
+                <a href="#" onclick="switchView('menu'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
+                    <i class="fa-solid fa-house w-5 text-emerald-400"></i>
+                    <span>Inicio / Perfil</span>
+                </a>
+                <a href="#" onclick="switchView('ficha'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
+                    <i class="fa-solid fa-file-medical w-5 text-blue-400"></i>
+                    <span>Ficha Médica</span>
+                </a>
+                <a href="#" onclick="switchView('citas'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
+                    <i class="fa-solid fa-calendar-days w-5 text-amber-400"></i>
+                    <span>Mis Citas</span>
+                </a>
+                <a href="#" onclick="switchView('agendar'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
+                    <i class="fa-solid fa-plus-circle w-5 text-cyan-400"></i>
+                    <span>Agendar Cita</span>
+                </a>
+                <a href="#" onclick="switchView('mapas'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
+                    <i class="fa-solid fa-map-location-dot w-5 text-purple-400"></i>
+                    <span>Mapas y Zonas</span>
+                </a>
+                <a href="#" onclick="switchView('recordatorio'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
+                    <i class="fa-solid fa-bell w-5 text-amber-300"></i>
+                    <span>Recordatorio y Sensores</span>
+                </a>
+                <a href="#" onclick="switchView('llegada'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
+                    <i class="fa-solid fa-qrcode w-5 text-emerald-300"></i>
+                    <span>Avisa tu Llegada</span>
+                </a>
+                <a href="#" onclick="switchView('sos'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl bg-red-950/40 text-red-400 hover:bg-red-900/50 transition">
+                    <span class="w-3 h-3 rounded-full bg-red-500 animate-pulse ml-0.5"></span>
+                    <span class="font-semibold">SOS Asistencia</span>
+                </a>
+            </nav>
+            <div class="p-4 border-t border-slate-700 text-xs text-slate-300 flex items-center justify-between">
+                <span>Sesión Activa</span>
+                <button onclick="logout()" class="text-red-400 hover:text-white flex items-center space-x-1 font-semibold">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- HEADER SUPERIOR -->
+        <header id="main-header" class="bg-[#4A7C59] text-white px-4 py-3.5 flex items-center justify-between shadow-md z-30 hidden">
+            <div class="flex items-center space-x-3">
+                <button id="btn-back" onclick="goBack()" class="p-1.5 rounded-xl hover:bg-black/10 transition text-white text-base">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </button>
+                <button id="btn-menu" onclick="toggleMenu()" class="p-1.5 rounded-xl hover:bg-black/10 transition text-white text-base">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <span id="header-title" class="text-xs sm:text-sm font-bold tracking-wide">Senti Inclusivo</span>
+            </div>
+            <button onclick="switchView('sos')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold shadow flex items-center space-x-1 transition">
+                <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+                <span>SOS</span>
+            </button>
+        </header>
+
+        <!-- CONTENEDOR DE PANTALLAS -->
+        <main class="flex-1 overflow-y-auto p-4 space-y-4 relative">
+
+            <!-- 1. PANTALLA DE INICIO / LOGIN -->
+            <div id="view-login" class="view-section flex flex-col justify-center items-center min-h-[85vh] py-6">
+                <div class="w-full max-w-sm bg-white p-8 rounded-3xl shadow-sm border border-slate-100 text-center space-y-6">
+                    <div class="w-20 h-20 bg-emerald-50 rounded-2xl flex items-center justify-center mx-auto shadow-inner text-[#4A7C59] text-3xl">
+                        <i class="fa-solid fa-shield-heart"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-extrabold text-[#4A7C59]">Senti</h1>
+                        <p class="text-xs text-slate-500 mt-1">Asistente Médico Inclusivo y Sensorial</p>
+                    </div>
+
+                    <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">RUN del Paciente</label>
+                            <input type="text" id="login-run" placeholder="Ej: 12.345.678-9" required
+                                class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] focus:outline-none text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">Contraseña</label>
+                            <input type="password" id="login-pass" placeholder="••••••••" required
+                                class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] focus:outline-none text-sm font-medium">
+                        </div>
+                        <button type="submit" class="w-full bg-[#4A7C59] hover:bg-[#3d674b] text-white font-semibold py-3.5 rounded-2xl shadow-md transition text-sm">
+                            Ingresar / Registrarse
+                        </button>
+                    </form>
+                    <p class="text-[11px] text-slate-400">Si es un RUN nuevo, te guiaremos para completar tu ficha de paciente.</p>
+                </div>
+            </div>
+
+            <!-- 1.5. PANTALLA DE CREACIÓN DE FICHA Y CONTACTO DE EMERGENCIA -->
+            <div id="view-registro-ficha" class="view-section hidden space-y-4">
+                <div class="space-y-1">
+                    <h2 class="text-base font-bold text-slate-800">Crear Ficha de Paciente</h2>
+                    <p class="text-xs text-slate-500">Es tu primer acceso. Ingresa tus datos clínicos y de contacto de emergencia.</p>
+                </div>
+
+                <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3.5">
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo</label>
+                        <input type="text" id="reg-nombre" placeholder="Ej: Juan Pérez" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Condición Principal / TEA</label>
+                        <input type="text" id="reg-condicion" value="T.E.A. - Hipersensible" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Preferencias Sensoriales</label>
+                        <input type="text" id="reg-preferencias" value="Contacto mínimo, poco ruido ambiental" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+
+                    <hr class="border-slate-100 my-2">
+                    <h3 class="text-xs font-bold text-[#4A7C59] uppercase tracking-wider">Contacto de Emergencia</h3>
+
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Contacto</label>
+                        <input type="text" id="reg-contacto-nombre" placeholder="Ej: María Gómez" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Parentesco con el Paciente</label>
+                        <input type="text" id="reg-parentesco" placeholder="Ej: Madre, Tutor, Hermano, Cónyuge" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono de Contacto</label>
+                        <input type="text" id="reg-telefono" placeholder="Ej: +56 9 8765 4321" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+
+                    <button onclick="guardarRegistroFicha()" class="w-full bg-[#4A7C59] hover:bg-[#3d674b] text-white font-semibold py-3 rounded-xl text-xs transition shadow mt-2">
+                        Guardar Ficha y Acceder
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. VISTA DE INICIO / MENÚ PRINCIPAL -->
+            <div id="view-menu" class="view-section hidden space-y-4">
+                <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm flex items-center space-x-4">
+                    <div class="w-16 h-16 bg-emerald-50 text-[#4A7C59] rounded-2xl flex items-center justify-center text-2xl shadow-inner border border-emerald-100">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h2 id="home-nombre" class="text-base font-bold text-slate-800">Juan Pérez</h2>
+                        <p id="home-run" class="text-xs text-slate-500">RUN: 12.345.678-9</p>
+                        <span class="inline-block mt-1 px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-full">Verificado</span>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-2">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider">Contacto de Emergencia</h3>
+                    <p id="home-contacto-info" class="text-xs font-semibold text-slate-700">María Gómez (Madre)</p>
+                    <p id="home-contacto-tel" class="text-xs text-slate-500">Tel: +56 9 8765 4321</p>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="switchView('ficha')" class="bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-2xl text-left shadow-sm transition space-y-2">
+                        <i class="fa-solid fa-file-medical text-blue-500 text-lg"></i>
+                        <div class="font-bold text-xs text-slate-800">Ficha Médica</div>
+                        <div class="text-[10px] text-slate-400">Datos y TEA</div>
+                    </button>
+                    <button onclick="switchView('citas')" class="bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-2xl text-left shadow-sm transition space-y-2">
+                        <i class="fa-solid fa-calendar-days text-amber-500 text-lg"></i>
+                        <div class="font-bold text-xs text-slate-800">Mis Citas</div>
+                        <div class="text-[10px] text-slate-400">Ver agenda</div>
+                    </button>
+                    <button onclick="switchView('mapas')" class="bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-2xl text-left shadow-sm transition space-y-2">
+                        <i class="fa-solid fa-map-location-dot text-purple-500 text-lg"></i>
+                        <div class="font-bold text-xs text-slate-800">Mapas & Zonas</div>
+                        <div class="text-[10px] text-slate-400">Orientación</div>
+                    </button>
+                    <button onclick="switchView('recordatorio')" class="bg-white hover:bg-slate-50 border border-slate-200 p-4 rounded-2xl text-left shadow-sm transition space-y-2">
+                        <i class="fa-solid fa-bell text-emerald-500 text-lg"></i>
+                        <div class="font-bold text-xs text-slate-800">Sensores Arduino</div>
+                        <div class="text-[10px] text-slate-400">Métricas en vivo</div>
+                    </button>
+                </div>
+
+                <button onclick="switchView('sos')" class="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-2xl text-sm shadow-lg transition flex items-center justify-center space-x-2">
+                    <i class="fa-solid fa-triangle-exclamation text-base"></i>
+                    <span>S.O.S. ASISTENCIA INMEDIATA</span>
+                </button>
+            </div>
+
+            <!-- 4. VISTA DE FICHA MÉDICA UNIFICADA -->
+            <div id="view-ficha" class="view-section hidden space-y-4">
+                <h2 class="text-base font-bold text-slate-800 px-1">Ficha Médica Unificada</h2>
+
+                <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Datos Personales</span>
+                        <div class="mt-1 text-xs text-slate-700 space-y-1">
+                            <p><strong>Nombre:</strong> <span id="ficha-lbl-nombre">Juan Pérez</span></p>
+                            <p><strong>RUN:</strong> <span id="ficha-lbl-run">12.345.678-9</span></p>
+                        </div>
+                    </div>
+
+                    <hr class="border-slate-100">
+
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Condición y Sensibilidad</span>
+                        <div class="mt-2 flex items-center space-x-2">
+                            <span class="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-lg text-xs font-bold" id="ficha-lbl-condicion">T.E.A.</span>
+                            <span class="px-2.5 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-semibold">Hipersensible</span>
+                        </div>
+                        <p class="mt-2 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl" id="ficha-lbl-preferencias">
+                            Preferencias: Contacto mínimo, poco ruido ambiental.
+                        </p>
+                    </div>
+
+                    <hr class="border-slate-100">
+
+                    <div>
+                        <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Contacto de Emergencia Registrado</span>
+                        <div class="mt-1 text-xs text-slate-700 bg-emerald-50 p-3 rounded-xl border border-emerald-100 space-y-1">
+                            <p><strong>Contacto:</strong> <span id="ficha-lbl-contacto">María Gómez</span></p>
+                            <p><strong>Parentesco:</strong> <span id="ficha-lbl-parentesco">Madre</span></p>
+                            <p><strong>Teléfono:</strong> <span id="ficha-lbl-tel">+56 9 8765 4321</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. VISTA DE MIS CITAS -->
+            <div id="view-citas" class="view-section hidden space-y-4">
+                <div class="flex items-center justify-between px-1">
+                    <h2 class="text-base font-bold text-slate-800">Mis Citas Médicas</h2>
+                    <button onclick="switchView('agendar')" class="bg-[#4A7C59] hover:bg-[#3d674b] text-white text-xs px-3 py-1.5 rounded-xl font-semibold shadow transition">
+                        <i class="fa-solid fa-plus mr-1"></i> Agendar
+                    </button>
+                </div>
+                
+                <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full">CESFAM</span>
+                        <span class="text-xs text-slate-400 font-medium"><i class="fa-regular fa-clock mr-1"></i> 24/10/2026</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-sm">Atención con Matrona</h3>
+                    <p class="text-xs text-slate-500">Control preventivo en ambiente adaptado.</p>
+                </div>
+
+                <div class="bg-white rounded-3xl p-4 border-2 border-amber-300 shadow-sm space-y-2 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-amber-400 text-amber-950 text-[10px] font-bold px-3 py-0.5 rounded-bl-xl">Próxima Cita</div>
+                    <div class="flex items-center justify-between">
+                        <span class="text-[11px] font-bold text-blue-700 bg-blue-50 px-2.5 py-1 rounded-full">Hospital</span>
+                        <span class="text-xs text-slate-400 font-medium"><i class="fa-regular fa-clock mr-1"></i> 02/11/2026</span>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-sm">Consulta Psiquiatría</h3>
+                    <p class="text-xs text-slate-500">Zona Ambulatoria - Box 04.</p>
+                    <button onclick="switchView('recordatorio')" class="mt-2 w-full bg-amber-100 hover:bg-amber-200 text-amber-900 py-2 rounded-xl text-xs font-semibold transition">
+                        Ver Recordatorio y Sensores
+                    </button>
+                </div>
+            </div>
+
+            <!-- AGENDAR CITA -->
+            <div id="view-agendar" class="view-section hidden space-y-4">
+                <h2 class="text-base font-bold text-slate-800 px-1">Agendar Nueva Cita</h2>
+                
+                <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-4">
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Seleccione Centro de Salud</label>
+                        <select id="agendar-centro" class="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl">
+                            <option>CESFAM</option>
+                            <option>Hospital Central</option>
+                            <option>Interconsulta Especialista</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Especialidad / Motivo</label>
+                        <input type="text" id="agendar-motivo" placeholder="Ej: Psiquiatría, Neurología, Matrona" class="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Fecha programada</label>
+                        <input type="date" id="agendar-fecha" class="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-xl">
+                    </div>
+
+                    <button onclick="confirmarAgendamiento()" class="w-full bg-[#4A7C59] hover:bg-[#3d674b] text-white font-semibold py-3 rounded-xl text-xs transition shadow">
+                        Confirmar Cita en Zona Ambulatoria
+                    </button>
+                </div>
+            </div>
+
+            <!-- 6. RECORDATORIO Y SENSORES DE ARDUINO -->
+            <div id="view-recordatorio" class="view-section hidden space-y-4">
+                <div class="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 shadow-sm space-y-3">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-base font-bold text-amber-900">Recordatorio de Cita</h2>
+                        <span class="px-2.5 py-1 bg-amber-200 text-amber-900 text-xs font-extrabold rounded-full">Zona Ambulatoria</span>
+                    </div>
+                    <p class="text-xs font-medium text-amber-900">Cita: 02/11/2026 - Psiquiatría (Hospital)</p>
+                </div>
+
+                <div class="space-y-3">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Métricas Ambientales (Base de Datos / Arduino)</h3>
+
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-lightbulb"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-slate-700 block">Luz Ambiental</span>
+                                <span class="text-[10px] text-slate-400">Sensor Fotorresistencia LDR</span>
+                            </div>
+                        </div>
+                        <span id="metric-luz" class="text-sm font-black text-amber-700">350 Lux</span>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-slate-700 block">Nivel de Sonido</span>
+                                <span class="text-[10px] text-slate-400">Sensor Micrófono KY-037</span>
+                            </div>
+                        </div>
+                        <span id="metric-sonido" class="text-sm font-black text-red-600">70 dB</span>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
+                                <i class="fa-solid fa-users"></i>
+                            </div>
+                            <div>
+                                <span class="text-xs font-bold text-slate-700 block">Aglomeración de gente</span>
+                                <span class="text-[10px] text-slate-400">Sensor Infrarrojo / Distancia</span>
+                            </div>
+                        </div>
+                        <span id="metric-aglom" class="text-sm font-black text-blue-700">4 personas</span>
+                    </div>
+
+                    <button onclick="actualizarMetricasArduino()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl text-xs transition shadow flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-rotate"></i>
+                        <span>Actualizar Métricas en Vivo (Simulación DB)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 7. MAPAS Y ZONAS -->
+            <div id="view-mapas" class="view-section hidden space-y-4">
+                <h2 class="text-base font-bold text-slate-800 px-1">Mapa del Recinto y Zonas</h2>
+                
+                <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-3">
+                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-800 flex items-center space-x-2">
+                        <i class="fa-solid fa-shield-heart text-emerald-600 text-base"></i>
+                        <span>Siga la ruta hacia la <strong>zona baja de estímulos</strong> y la <strong>Zona Ambulatoria</strong>.</span>
+                    </div>
+
+                    <div class="relative bg-slate-100 rounded-2xl overflow-hidden border border-slate-300 h-64 flex items-center justify-center">
+                        <svg viewBox="0 0 400 300" class="w-full h-full object-cover">
+                            <rect x="40" y="40" width="320" height="220" fill="#e2e8f0" rx="12"/>
+                            <rect x="70" y="70" width="260" height="160" fill="#ffffff" rx="8"/>
+                            <rect x="80" y="80" width="110" height="70" fill="#d1fae5" stroke="#10b981" stroke-width="2" stroke-dasharray="4"/>
+                            <text x="135" y="115" font-size="10" font-weight="bold" fill="#047857" text-anchor="middle">Zona Baja</text>
+                            <text x="135" y="127" font-size="9" fill="#047857" text-anchor="middle">de Estímulos</text>
+                            
+                            <rect x="230" y="80" width="80" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+                            <text x="270" y="99" font-size="10" font-weight="bold" fill="#b45309" text-anchor="middle">Box 04</text>
+
+                            <rect x="175" y="230" width="50" height="15" fill="#3b82f6" rx="3"/>
+                            <text x="200" y="241" font-size="9" fill="#ffffff" font-weight="bold" text-anchor="middle">Entrada</text>
+                        </svg>
+                    </div>
+
+                    <div class="text-xs text-slate-500 space-y-1 px-1">
+                        <p class="font-semibold text-slate-700">Referencias oficiales:</p>
+                        <p>• <span class="text-emerald-600 font-medium">Zona baja de estímulos:</span> Espacio silencioso de espera.</p>
+                        <p>• <span class="text-amber-600 font-medium">Zona Ambulatoria / Box 04:</span> Destino para consulta médica.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 8. AVISA TU LLEGADA -->
+            <div id="view-llegada" class="view-section hidden space-y-4">
+                <h2 class="text-base font-bold text-slate-800 px-1">Avisa tu Llegada</h2>
+                <p class="text-xs text-slate-500 px-1">Acérquese al sensor o escanee el código QR de entrada para notificar su presencia sin hacer filas.</p>
+                
+                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-center space-y-4">
+                    <div id="qr-box" class="w-48 h-48 mx-auto bg-slate-50 border-2 border-dashed border-[#4A7C59] rounded-3xl flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-emerald-50/50 transition" onclick="simularEscaneo()">
+                        <i class="fa-solid fa-camera text-4xl text-[#4A7C59] mb-2"></i>
+                        <span class="text-xs font-bold text-slate-700">Escanea o pulsa aquí</span>
+                        <span class="text-[10px] text-slate-400 mt-1">Sensor de proximidad QR</span>
+                    </div>
+
+                    <button onclick="simularEscaneo()" class="w-full bg-[#4A7C59] hover:bg-[#3d674b] text-white font-semibold py-3 rounded-2xl text-xs transition shadow">
+                        Avisar llegada automáticamente
+                    </button>
+                </div>
+            </div>
+
+            <!-- 9. NOTIFICACIÓN DE TURNO -->
+            <div id="view-turno" class="view-section hidden flex flex-col items-center justify-center min-h-[70vh] text-center space-y-4">
+                <div class="bg-emerald-600 text-white rounded-3xl p-8 shadow-xl text-center space-y-3 w-full animate-bounce">
+                    <span class="bg-white/20 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Notificación en Vivo</span>
+                    <h3 class="text-3xl font-black tracking-tight">¡ES TU TURNO!</h3>
+                    <div class="bg-white text-emerald-950 py-4 px-6 rounded-2xl font-bold text-base shadow-inner">
+                        Box - 04 <br>
+                        <span class="text-xs font-normal text-emerald-800">Zona Ambulatoria (Baja estimulación)</span>
+                    </div>
+                </div>
+                <button onclick="switchView('menu')" class="w-full bg-slate-800 text-white py-3 rounded-2xl text-xs font-semibold">
+                    Volver al Inicio
+                </button>
+            </div>
+
+            <!-- 10. SOS DE EMERGENCIA -->
+            <div id="view-sos" class="view-section hidden flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6">
+                <div class="space-y-1">
+                    <h2 class="text-2xl font-black text-slate-800">Pincha si necesitas asistencia</h2>
+                    <p class="text-xs text-slate-500 max-w-xs mx-auto">Un asistente o profesional de salud acudirá a tu ubicación en la Zona Ambulatoria de inmediato.</p>
+                </div>
+
+                <div class="relative flex items-center justify-center my-6">
+                    <div class="absolute w-56 h-56 rounded-full bg-red-400 opacity-30 pulse-sos"></div>
+                    <button onclick="triggerSOSAlert()" class="relative w-44 h-44 rounded-full bg-gradient-to-tr from-red-600 to-red-500 text-white font-black text-3xl shadow-2xl flex flex-col items-center justify-center border-4 border-white active:scale-95 transition transform">
+                        <i class="fa-solid fa-hand-holding-heart text-4xl mb-1"></i>
+                        <span>S.O.S</span>
+                    </button>
+                </div>
+
+                <div id="sos-status" class="hidden bg-red-50 border border-red-200 text-red-700 text-xs p-4 rounded-2xl w-full max-w-xs">
+                    <i class="fa-solid fa-circle-check text-red-600 text-sm mb-1 block"></i>
+                    Se ha enviado una alerta silenciosa al personal de la Zona Ambulatoria. Mantén la calma, un asistente está en camino.
+                </div>
+            </div>
+
+        </main>
+
+    </div>
+
+    <script>
+        // Memoria de usuario y datos guardados
+        let currentUser = {
+            run: "",
+            pass: "",
+            nombre: "Juan Pérez",
+            condicion: "T.E.A. - Hipersensible",
+            preferencias: "Contacto mínimo, poco ruido ambiental",
+            contactoNombre: "María Gómez",
+            parentesco: "Madre",
+            telefono: "+56 9 8765 4321"
+        };
+
+        // Historial para botón Atrás
+        let navHistory = ['view-login'];
+
+        function switchView(viewName) {
+            const targetId = `view-${viewName}`;
+            
+            // Ocultar todas las secciones
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+            
+            // Mostrar la seleccionada
+            const target = document.getElementById(targetId);
+            if(target) target.classList.remove('hidden');
+
+            // Gestionar historial de navegación
+            if (navHistory[navHistory.length - 1] !== targetId) {
+                navHistory.push(targetId);
+            }
+
+            // Actualizar visibilidad y texto de Header
+            const header = document.getElementById('main-header');
+            const backBtn = document.getElementById('btn-back');
+            const menuBtn = document.getElementById('btn-menu');
+            const titleEl = document.getElementById('header-title');
+
+            if (viewName === 'login') {
+                header.classList.add('hidden');
+            } else {
+                header.classList.remove('hidden');
+                
+                // Mostrar u ocultar botón atrás según pantalla
+                if (viewName === 'menu') {
+                    backBtn.style.display = 'none';
+                    menuBtn.style.display = 'block';
+                } else {
+                    backBtn.style.display = 'block';
+                    menuBtn.style.display = 'none';
+                }
+
+                const titles = {
+                    'menu': 'Senti - Menú Principal',
+                    'registro-ficha': 'Registro de Ficha',
+                    'ficha': 'Ficha Médica Unificada',
+                    'citas': 'Mis Citas Médicas',
+                    'agendar': 'Agendar Cita',
+                    'recordatorio': 'Sensores & Recordatorio',
+                    'mapas': 'Mapa & Zonas',
+                    'llegada': 'Avisa tu Llegada',
+                    'turno': 'Notificación de Turno',
+                    'sos': 'Asistencia S.O.S.'
+                };
+                titleEl.innerText = titles[viewName] || 'Senti';
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function goBack() {
+            if (navHistory.length > 1) {
+                navHistory.pop(); // remover actual
+                const prevId = navHistory[navHistory.length - 1];
+                const viewName = prevId.replace('view-', '');
+                switchView(viewName);
+                navHistory.pop(); // limpiar el duplicado generado por switchView
+            } else {
+                switchView('menu');
+            }
+        }
+
+        function toggleMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('drawer-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            const run = document.getElementById('login-run').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+
+            if(!run || !pass) return;
+
+            currentUser.run = run;
+            currentUser.pass = pass;
+            document.getElementById('drawer-run-text').innerText = 'RUN: ' + run;
+
+            // Si es un RUN nuevo simulado (ej. termina en 5 o no es el por defecto), pedir ficha y contacto
+            if(run.length > 5 && run !== "12.345.678-9") {
+                switchView('registro-ficha');
+            } else {
+                actualizarDatosUI();
+                switchView('menu');
+            }
+        }
+
+        function guardarRegistroFicha() {
+            currentUser.nombre = document.getElementById('reg-nombre').value || "Paciente Nuevo";
+            currentUser.condicion = document.getElementById('reg-condicion').value || "T.E.A.";
+            currentUser.preferencias = document.getElementById('reg-preferencias').value || "Poco ruido";
+            currentUser.contactoNombre = document.getElementById('reg-contacto-nombre').value || "Familiar";
+            currentUser.parentesco = document.getElementById('reg-parentesco').value || "Tutor";
+            currentUser.telefono = document.getElementById('reg-telefono').value || "+56 9 0000 0000";
+
+            actualizarDatosUI();
+            alert('¡Ficha médica y de contacto guardada exitosamente!');
+            switchView('menu');
+        }
+
+        function actualizarDatosUI() {
+            document.getElementById('home-nombre').innerText = currentUser.nombre;
+            document.getElementById('home-run').innerText = 'RUN: ' + currentUser.run;
+            document.getElementById('home-contacto-info').innerText = `${currentUser.contactoNombre} (${currentUser.parentesco})`;
+            document.getElementById('home-contacto-tel').innerText = 'Tel: ' + currentUser.telefono;
+
+            document.getElementById('ficha-lbl-nombre').innerText = currentUser.nombre;
+            document.getElementById('ficha-lbl-run').innerText = currentUser.run;
+            document.getElementById('ficha-lbl-condicion').innerText = currentUser.condicion;
+            document.getElementById('ficha-lbl-preferencias').innerText = 'Preferencias: ' + currentUser.preferencias;
+            document.getElementById('ficha-lbl-contacto').innerText = currentUser.contactoNombre;
+            document.getElementById('ficha-lbl-parentesco').innerText = currentUser.parentesco;
+            document.getElementById('ficha-lbl-tel').innerText = currentUser.telefono;
+        }
+
+        function confirmarAgendamiento() {
+            alert('¡Cita agendada correctamente en la Zona Ambulatoria!');
+            switchView('citas');
+        }
+
+        function simularEscaneo() {
+            const qrBox = document.getElementById('qr-box');
+            qrBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl text-[#4A7C59] mb-2"></i><span class="text-xs font-bold text-slate-700">Verificando sensor de entrada...</span>';
+            
+            setTimeout(() => {
+                switchView('turno');
+            }, 1200);
+        }
+
+        function triggerSOSAlert() {
+            const statusBox = document.getElementById('sos-status');
+            statusBox.classList.remove('hidden');
+            if (navigator.vibrate) {
+                navigator.vibrate([200, 100, 200]);
+            }
+        }
+
+        function actualizarMetricasArduino() {
+            // Valores simulados directamente desde la Base de Datos / Arduino
+            const luces = ['180 Lux (Tenue)', '350 Lux (Normal)', '610 Lux (Alto)', '420 Lux'];
+            const sonidos = ['45 dB (Silencioso)', '60 dB', '70 dB (Moderado)', '82 dB (Ruidoso)'];
+            const aglomeraciones = ['2 personas', '4 personas', '6 personas (Sala con flujo)', '1 persona'];
+
+            document.getElementById('metric-luz').innerText = luces[Math.floor(Math.random() * luces.length)];
+            document.getElementById('metric-sonido').innerText = sonidos[Math.floor(Math.random() * sonidos.length)];
+            document.getElementById('metric-aglom').innerText = aglomeraciones[Math.floor(Math.random() * aglomeraciones.length)];
+            
+            alert('Datos actualizados desde los sensores de Arduino (Base de Datos en vivo).');
+        }
+
+        function logout() {
+            navHistory = ['view-login'];
+            switchView('login');
+        }
+    </script>
+</body>
+</html>
+```

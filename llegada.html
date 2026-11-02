@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Registrar llegada</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 2rem 1rem; }
+    main { max-width: 360px; width: 100%; text-align: center; }
+    input, button { font-size: 1.1rem; padding: .7rem; width: 100%; box-sizing: border-box; margin-top: .6rem; }
+    #numero { font-size: 4rem; font-weight: 700; margin: .5rem 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Registrar llegada</h1>
+    <p id="mensaje">Registrando…</p>
+    <div id="numero"></div>
+
+    <div id="pedirRut" hidden>
+      <input id="rut" placeholder="Tu RUT (ej: 12.345.678-9)" inputmode="text" autocomplete="off">
+      <button id="guardar">Registrar</button>
+    </div>
+  </main>
+
+  <script>
+    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbxNM_VP9h5TsO9US12vmK15pGhs-kgUxITYWzeaQl7d79EOPnsR4uxoFR28kxUtn_Za5Q/exec";
+    const TOKEN = "1234";
+
+    const mensaje = document.getElementById("mensaje");
+    const numero = document.getElementById("numero");
+    const pedirRut = document.getElementById("pedirRut");
+    const inputRut = document.getElementById("rut");
+
+    async function registrar(rut) {
+      pedirRut.hidden = true;
+      numero.textContent = "";
+      mensaje.textContent = "Registrando…";
+      try {
+        const resp = await fetch(URL_SCRIPT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ rut: rut, token: TOKEN })
+        });
+        const r = await resp.json();
+
+        if (r.status === "success") {
+          localStorage.setItem("rut", rut);
+          mensaje.textContent = "Listo, estás en espera. Tu número de atención es:";
+          numero.textContent = r.turno;
+        } else if (r.status === "already") {
+          localStorage.setItem("rut", rut);
+          mensaje.textContent = "Ya estabas registrado. Tu número de atención es:";
+          numero.textContent = r.turno;
+        } else if (r.status === "not_found") {
+          localStorage.removeItem("rut");
+          mensaje.textContent = "No encontramos ese RUT. Revísalo e inténtalo de nuevo.";
+          pedirRut.hidden = false;
+        } else if (r.status === "not_today") {
+          mensaje.textContent = "Tu cita no es para hoy.";
+        } else {
+          mensaje.textContent = "No se pudo registrar. Avisa en el mesón.";
+        }
+      } catch (err) {
+        mensaje.textContent = "Sin conexión con el servidor. Inténtalo de nuevo.";
+      }
+    }
+
+    document.getElementById("guardar").addEventListener("click", () => {
+      const rut = inputRut.value.trim();
+      if (rut) registrar(rut);
+    });
+
+    const rutGuardado = localStorage.getItem("rut");
+    if (rutGuardado) {
+      registrar(rutGuardado);
+    } else {
+      mensaje.textContent = "Ingresa tu RUT para registrar tu llegada.";
+      pedirRut.hidden = false;
+    }
+  </script>
+</body>
+</html>
