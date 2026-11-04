@@ -591,9 +591,10 @@
             const pass = document.getElementById('login-pass').value.trim();
             
             // *****Guardar el RUT normalizado para que llegada.html lo lea****
-            const rutNormalizado = run.replace(/\./g, "").replace(/\s/g, "").toUpperCase();
-            localStorage.setItem("rut", rutNormalizado);
+            const runNormalizado = run.replace(/\./g, "").replace(/\s/g, "").toUpperCase();
+            localStorage.setItem("run", runNormalizado);
             //***HASTA AQUI MODIFICADO POR MICHU***
+            
             if(!run || !pass) return;
 
             currentUser.run = run;
