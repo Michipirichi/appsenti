@@ -9,6 +9,7 @@
     main { max-width: 360px; width: 100%; text-align: center; }
     input, button { font-size: 1.1rem; padding: .7rem; width: 100%; box-sizing: border-box; margin-top: .6rem; }
     #numero { font-size: 4rem; font-weight: 700; margin: .5rem 0; }
+    #otro { background: none; border: 1px solid #94a3b8; border-radius: .6rem; color: #475569; }
   </style>
 </head>
 <body>
@@ -16,6 +17,7 @@
     <h1>Registrar llegada</h1>
     <p id="mensaje">Registrando…</p>
     <div id="numero"></div>
+    <button id="otro" hidden>No soy yo / Usar otro RUT</button>
 
     <div id="pedirRut" hidden>
       <input id="rut" placeholder="Tu RUT (ej: 12.345.678-9)" inputmode="text" autocomplete="off">
@@ -31,9 +33,11 @@
     const numero = document.getElementById("numero");
     const pedirRut = document.getElementById("pedirRut");
     const inputRut = document.getElementById("rut");
+    const botonOtro = document.getElementById("otro");
 
     async function registrar(rut) {
       pedirRut.hidden = true;
+      botonOtro.hidden = true;
       numero.textContent = "";
       mensaje.textContent = "Registrando…";
       try {
@@ -45,32 +49,46 @@
         const r = await resp.json();
 
         if (r.status === "success") {
-          localStorage.setItem("rut", rut);
           mensaje.textContent = "Listo, estás en espera. Tu número de atención es:";
           numero.textContent = r.turno;
+          botonOtro.hidden = false;
         } else if (r.status === "already") {
-          localStorage.setItem("rut", rut);
           mensaje.textContent = "Ya estabas registrado. Tu número de atención es:";
           numero.textContent = r.turno;
+          botonOtro.hidden = false;
         } else if (r.status === "not_found") {
-          localStorage.removeItem("rut");
           mensaje.textContent = "No encontramos ese RUT. Revísalo e inténtalo de nuevo.";
           pedirRut.hidden = false;
         } else if (r.status === "not_today") {
           mensaje.textContent = "Tu cita no es para hoy.";
+          botonOtro.hidden = false;
         } else {
           mensaje.textContent = "No se pudo registrar. Avisa en el mesón.";
+          botonOtro.hidden = false;
         }
       } catch (err) {
         mensaje.textContent = "Sin conexión con el servidor. Inténtalo de nuevo.";
+        botonOtro.hidden = false;
       }
     }
 
+    // Registrar con el RUT escrito a mano (no se guarda: solo index guarda el RUT de la sesión)
     document.getElementById("guardar").addEventListener("click", () => {
       const rut = inputRut.value.trim();
       if (rut) registrar(rut);
     });
 
+    // Permite probar con otro RUT
+    botonOtro.addEventListener("click", () => {
+      numero.textContent = "";
+      botonOtro.hidden = true;
+      inputRut.value = "";
+      mensaje.textContent = "Ingresa tu RUT para registrar tu llegada.";
+      pedirRut.hidden = false;
+      inputRut.focus();
+    });
+
+    // Al abrir la página: usa el RUT de la sesión iniciada en index
     const rutGuardado = localStorage.getItem("rut");
     if (rutGuardado) {
       registrar(rutGuardado);
