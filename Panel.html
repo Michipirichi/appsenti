@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Panel de turnos</title>
+  <style>
+    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 2rem 1rem; }
+    main { max-width: 360px; width: 100%; text-align: center; }
+    input, button { font-size: 1.1rem; padding: .7rem; width: 100%; box-sizing: border-box; margin-top: .6rem; }
+    #turno { font-size: 5rem; font-weight: 700; margin: .5rem 0; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Panel de turnos</h1>
+    <input id="clave" type="password" placeholder="Clave del personal">
+    <button id="siguiente">Llamar siguiente</button>
+    <p id="mensaje">Aún no se ha llamado a nadie.</p>
+    <div id="turno"></div>
+  </main>
+
+  <script>
+    const URL_SCRIPT = "PEGA_AQUI_TU_URL_EXEC";
+
+    const mensaje = document.getElementById("mensaje");
+    const turno = document.getElementById("turno");
+    const boton = document.getElementById("siguiente");
+
+    boton.addEventListener("click", async () => {
+      const clave = document.getElementById("clave").value.trim();
+      if (!clave) { mensaje.textContent = "Ingresa la clave del personal."; return; }
+      boton.disabled = true;
+      mensaje.textContent = "Llamando…";
+      try {
+        const resp = await fetch(URL_SCRIPT, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ accion: "siguiente", token: clave })
+        });
+        const r = await resp.json();
+        if (r.status === "success") {
+          mensaje.textContent = "Llamando al turno:";
+          turno.textContent = r.turno;
+        } else if (r.status === "empty") {
+          mensaje.textContent = "No hay pacientes en espera.";
+          turno.textContent = "";
+        } else {
+          mensaje.textContent = r.message || "No se pudo llamar.";
+        }
+      } catch (e) {
+        mensaje.textContent = "Sin conexión con el servidor.";
+      }
+      boton.disabled = false;
+    });
+  </script>
+</body>
+</html>
