@@ -9,19 +9,24 @@
     main { max-width: 360px; width: 100%; text-align: center; }
     input, button { font-size: 1.1rem; padding: .7rem; width: 100%; box-sizing: border-box; margin-top: .6rem; }
     #numero { font-size: 4rem; font-weight: 700; margin: .5rem 0; }
-    #otro { background: none; border: 1px solid #94a3b8; border-radius: .6rem; color: #475569; }
+    #cuenta { color: #666; font-size: .95rem; margin-top: 1rem; }
+    #listo { background: none; border: 1px solid #ccc; border-radius: 8px; font-size: .95rem; cursor: pointer; }
   </style>
 </head>
 <body>
   <main>
     <h1>Registrar llegada</h1>
-    <p id="mensaje">Registrando…</p>
+    <p id="mensaje">Ingresa tu RUT para registrar tu llegada.</p>
     <div id="numero"></div>
-    <button id="otro" hidden>No soy yo / Usar otro RUT</button>
 
-    <div id="pedirRut" hidden>
+    <div id="pedirRut">
       <input id="rut" placeholder="Tu RUT (ej: 12.345.678-9)" inputmode="text" autocomplete="off">
       <button id="guardar">Registrar</button>
+    </div>
+
+    <div id="finalizar" hidden>
+      <p id="cuenta"></p>
+      <button id="listo">Listo</button>
     </div>
   </main>
 
@@ -29,15 +34,55 @@
     const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbzI4yHEkipv2HMpYy3FsKSMk8WBYq-HPH-lQK5BARvunPkwtz6e2yCSqfF1eq6r-wAjkA/exec";
     const TOKEN = "1234";
 
+    // Segundos que se muestra el resultado antes de volver a pedir RUT
+    const SEGUNDOS_RESULTADO = 10;
+
     const mensaje = document.getElementById("mensaje");
     const numero = document.getElementById("numero");
     const pedirRut = document.getElementById("pedirRut");
     const inputRut = document.getElementById("rut");
-    const botonOtro = document.getElementById("otro");
+    const btnGuardar = document.getElementById("guardar");
+    const finalizar = document.getElementById("finalizar");
+    const cuenta = document.getElementById("cuenta");
+
+    let temporizador = null;
+
+    // Mismo formato que index.html: sin puntos, sin espacios, en mayúsculas
+    function normalizarRut(rut) {
+      return rut.replace(/\./g, "").replace(/\s/g, "").toUpperCase();
+    }
+
+    // Deja la pantalla lista para el siguiente paciente
+    function reiniciar() {
+      clearInterval(temporizador);
+      temporizador = null;
+      numero.textContent = "";
+      mensaje.textContent = "Ingresa tu RUT para registrar tu llegada.";
+      finalizar.hidden = true;
+      pedirRut.hidden = false;
+      btnGuardar.disabled = false;
+      inputRut.value = "";
+      inputRut.focus();
+    }
+
+    // Muestra el resultado y vuelve sola a pedir RUT tras unos segundos
+    function reiniciarEnSegundos(segundos) {
+      finalizar.hidden = false;
+      let restantes = segundos;
+      cuenta.textContent = `Volviendo al inicio en ${restantes} s…`;
+      temporizador = setInterval(() => {
+        restantes--;
+        if (restantes <= 0) {
+          reiniciar();
+        } else {
+          cuenta.textContent = `Volviendo al inicio en ${restantes} s…`;
+        }
+      }, 1000);
+    }
 
     async function registrar(rut) {
       pedirRut.hidden = true;
-      botonOtro.hidden = true;
+      btnGuardar.disabled = true;
       numero.textContent = "";
       mensaje.textContent = "Registrando…";
       try {
@@ -51,51 +96,51 @@
         if (r.status === "success") {
           mensaje.textContent = "Listo, estás en espera. Tu número de atención es:";
           numero.textContent = r.turno;
-          botonOtro.hidden = false;
+          reiniciarEnSegundos(SEGUNDOS_RESULTADO);
         } else if (r.status === "already") {
           mensaje.textContent = "Ya estabas registrado. Tu número de atención es:";
           numero.textContent = r.turno;
-          botonOtro.hidden = false;
+          reiniciarEnSegundos(SEGUNDOS_RESULTADO);
         } else if (r.status === "not_found") {
+          // Se queda en el formulario para que corrija el RUT
           mensaje.textContent = "No encontramos ese RUT. Revísalo e inténtalo de nuevo.";
           pedirRut.hidden = false;
+          btnGuardar.disabled = false;
+          inputRut.select();
         } else if (r.status === "not_today") {
           mensaje.textContent = "Tu cita no es para hoy.";
-          botonOtro.hidden = false;
+          reiniciarEnSegundos(SEGUNDOS_RESULTADO);
         } else {
           mensaje.textContent = "No se pudo registrar. Avisa en el mesón.";
-          botonOtro.hidden = false;
+          reiniciarEnSegundos(SEGUNDOS_RESULTADO);
         }
       } catch (err) {
         mensaje.textContent = "Sin conexión con el servidor. Inténtalo de nuevo.";
-        botonOtro.hidden = false;
+        pedirRut.hidden = false;
+        btnGuardar.disabled = false;
       }
     }
 
-    // Registrar con el RUT escrito a mano (no se guarda: solo index guarda el RUT de la sesión)
-    document.getElementById("guardar").addEventListener("click", () => {
-      const rut = inputRut.value.trim();
+    btnGuardar.addEventListener("click", () => {
+      const rut = normalizarRut(inputRut.value.trim());
       if (rut) registrar(rut);
     });
 
-    // Permite probar con otro RUT
-    botonOtro.addEventListener("click", () => {
-      numero.textContent = "";
-      botonOtro.hidden = true;
-      inputRut.value = "";
-      mensaje.textContent = "Ingresa tu RUT para registrar tu llegada.";
-      pedirRut.hidden = false;
-      inputRut.focus();
+    inputRut.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btnGuardar.click();
     });
 
-    // Al abrir la página: usa el RUT de la sesión iniciada en index
-    const rutGuardado = localStorage.getItem("rut");
-    if (rutGuardado) {
-      registrar(rutGuardado);
-    } else {
-      mensaje.textContent = "Ingresa tu RUT para registrar tu llegada.";
-      pedirRut.hidden = false;
-    }
+    document.getElementById("listo").addEventListener("click", reiniciar);
+
+    // Limpia claves antiguas que esta página guardaba antes
+    localStorage.removeItem("rut");
+
+    // Si el navegador muestra la página desde caché (botón Atrás), empezar limpia
+    window.addEventListener("pageshow", (e) => {
+      if (e.persisted) reiniciar();
+    });
+
+    reiniciar();
   </script>
 </body>
 </html>
