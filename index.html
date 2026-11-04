@@ -606,6 +606,7 @@ html
             currentUser.run = run;
             currentUser.pass = pass;
             document.getElementById('drawer-run-text').innerText = 'RUN: ' + run;
+            iniciarSeguimiento();
 
             // Si es un RUN nuevo simulado (ej. termina en 5 o no es el por defecto), pedir ficha y contacto
             if(run.length > 5 && run !== "12.345.678-9") {
