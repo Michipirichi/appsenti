@@ -665,7 +665,7 @@ async function cargarAgenda() {
         sel.innerHTML = '<option value="">Elige una especialidad</option>' +
             agenda.map(e => `<option value="${e.nombre}">${e.nombre}</option>`).join("");
     } catch (e) {
-        sel.innerHTML = '<option value="">No se pudo cargar</option>';
+        sel.innerHTML = '<option value="">Error: ' + e.message + '</option>';
     }
     fechaElegida = "";
     mostrarFechas();
