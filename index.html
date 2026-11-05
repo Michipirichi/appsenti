@@ -1,4 +1,3 @@
-html
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -748,8 +747,8 @@ function elegirFecha(fecha) {
                 const r = await resp.json();
                 if (r.status === "not_found") texto = 'No encontramos tu RUN en las citas';
                 else if (r.status === "not_today") texto = 'Tu cita no es para hoy';
-                else if (r.status !== "success" && r.status !== "already") texto = 'No se pudo registrar';
                 else if (r.status === "done") texto = 'Ya fuiste atendido hoy';
+                else if (r.status !== "success" && r.status !== "already") texto = 'No se pudo registrar';
             } catch (e) {
                 texto = 'Sin conexión con el servidor';
             }
@@ -806,9 +805,10 @@ function elegirFecha(fecha) {
                 });
                 const r = await resp.json();
                 if (!currentUser.run || r.status !== "success") return;   // cerró sesión o RUN sin cita
-
+        
                 mostrarEstadoTurno(r);
-                if (!r.turno || r.estado === "Atendido") { caja.classList.add('hidden'); return; } {
+        
+                if (r.estado === "Llamado" && estadoAnterior !== "Llamado") {
                     if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]);
                     switchView('turno');
                 }
@@ -818,7 +818,7 @@ function elegirFecha(fecha) {
 
         function mostrarEstadoTurno(r) {
             const caja = document.getElementById('estado-turno');
-            if (!r.turno) { caja.classList.add('hidden'); return; }   // aún no registra su llegada
+            if (!r.turno || r.estado === "Atendido") { caja.classList.add('hidden'); return; }
             caja.classList.remove('hidden');
             document.getElementById('estado-mi-turno').innerText = r.turno;
             document.getElementById('estado-actual').innerText = r.turnoActual || "—";
@@ -837,19 +837,6 @@ function elegirFecha(fecha) {
             navHistory = ['view-login'];
             switchView('login');
         }
-       // SOLO PARA PRUEBAS: devuelve todas las citas a "Agendada" y borra los turnos
-        function reiniciarPruebas() {
-          const sheet = abrirHoja();
-          const datos = sheet.getDataRange().getValues();
-          const c = columnas(datos[0]);
-          for (let i = 1; i < datos.length; i++) {
-            const e = datos[i][c.estado];
-            if (e === ESTADO_ESPERA || e === ESTADO_LLAMADO || e === ESTADO_ATENDIDO) {
-              sheet.getRange(i + 1, c.estado + 1).setValue(ESTADO_AGENDADA);
-              sheet.getRange(i + 1, c.turno + 1).clearContent();
-            }
-          }
-        } 
 
     </script>
 </body>
