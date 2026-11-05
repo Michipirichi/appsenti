@@ -891,7 +891,7 @@ function elegirFecha(fecha) {
                     body: JSON.stringify({ accion: "citas", rut: currentUser.run, token: TOKEN })
                 });
                 const r = await resp.json();
-                if (r.status !== "success") throw new Error(r.message || "error");
+                if (r.status !== "success") throw new Error(r.message || ("respuesta inesperada: " + JSON.stringify(r)));
         
                 // Primero las pendientes (de la más cercana a la más lejana), luego las atendidas
                 const citas = r.citas.slice().sort((a, b) => {
