@@ -743,7 +743,12 @@ function elegirFecha(fecha) {
     fechaElegida = fecha;
     document.querySelectorAll('.fecha-btn').forEach(b => {
         const activo = b.dataset.fecha === fecha;
-        b.classList.toggle('bg-emerald-100', activo);
+        const libre = !b.disabled;
+        b.classList.toggle('bg-white', libre && !activo);
+        b.classList.toggle('text-slate-700', libre && !activo);
+        b.classList.toggle('border-slate-300', libre && !activo);
+        b.classList.toggle('bg-[#4A7C59]', activo);
+        b.classList.toggle('text-white', activo);
         b.classList.toggle('border-[#4A7C59]', activo);
     });
 }
