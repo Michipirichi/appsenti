@@ -837,7 +837,19 @@ function elegirFecha(fecha) {
             navHistory = ['view-login'];
             switchView('login');
         }
-        
+       // SOLO PARA PRUEBAS: devuelve todas las citas a "Agendada" y borra los turnos
+        function reiniciarPruebas() {
+          const sheet = abrirHoja();
+          const datos = sheet.getDataRange().getValues();
+          const c = columnas(datos[0]);
+          for (let i = 1; i < datos.length; i++) {
+            const e = datos[i][c.estado];
+            if (e === ESTADO_ESPERA || e === ESTADO_LLAMADO || e === ESTADO_ATENDIDO) {
+              sheet.getRange(i + 1, c.estado + 1).setValue(ESTADO_AGENDADA);
+              sheet.getRange(i + 1, c.turno + 1).clearContent();
+            }
+          }
+        } 
 
     </script>
 </body>
