@@ -110,6 +110,9 @@
         } else if (r.status === "not_today") {
           mensaje.textContent = "Tu cita no es para hoy.";
           reiniciarEnSegundos(SEGUNDOS_RESULTADO);
+        } else if (r.status === "done") {
+          mensaje.textContent = "Ya fuiste atendido. No tienes más citas hoy.";
+          reiniciarEnSegundos(SEGUNDOS_RESULTADO);
         } else {
           mensaje.textContent = "No se pudo registrar. Avisa en el mesón.";
           reiniciarEnSegundos(SEGUNDOS_RESULTADO);
