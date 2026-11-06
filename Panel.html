@@ -8,6 +8,10 @@
     body { font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 2rem 1rem; }
     main { max-width: 360px; width: 100%; text-align: center; }
     input, button { font-size: 1.1rem; padding: .7rem; width: 100%; box-sizing: border-box; margin-top: .6rem; }
+    button { color: #fff; border: 0; border-radius: 10px; cursor: pointer; }
+    button:disabled { opacity: .6; cursor: wait; }
+    #btn-consulta { background: #4A7C59; }
+    #btn-meson { background: #2563eb; }
     #turno { font-size: 5rem; font-weight: 700; margin: .5rem 0; }
   </style>
 </head>
@@ -15,44 +19,50 @@
   <main>
     <h1>Panel de turnos</h1>
     <input id="clave" type="password" placeholder="Clave del personal">
-    <button id="siguiente">Llamar siguiente</button>
+    <button id="btn-consulta">Llamar siguiente · Consulta</button>
+    <button id="btn-meson">Llamar siguiente · Mesón</button>
     <p id="mensaje">Aún no se ha llamado a nadie.</p>
     <div id="turno"></div>
   </main>
 
   <script>
-    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbyQCKk7trIlZb2c93YWgsJfono-d7qIBdbxrMBCcqOF2Fm1GeS3lpKxrI9B6MwsfZeerg/exec";
+    // PEGA AQUÍ la URL /exec de tu implementación (la misma de index.html)
+    const URL_SCRIPT = "PEGA_AQUI_TU_URL_EXEC";
 
     const mensaje = document.getElementById("mensaje");
     const turno = document.getElementById("turno");
-    const boton = document.getElementById("siguiente");
+    const botones = [document.getElementById("btn-consulta"), document.getElementById("btn-meson")];
 
-    boton.addEventListener("click", async () => {
+    async function llamar(tipo) {
       const clave = document.getElementById("clave").value.trim();
       if (!clave) { mensaje.textContent = "Ingresa la clave del personal."; return; }
-      boton.disabled = true;
+      botones.forEach(b => b.disabled = true);
       mensaje.textContent = "Llamando…";
+      turno.textContent = "";
       try {
         const resp = await fetch(URL_SCRIPT, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ accion: "siguiente", token: clave })
+          body: JSON.stringify({ accion: "siguiente", tipo: tipo, token: clave })
         });
         const r = await resp.json();
+        const nombre = tipo === "meson" ? "mesón" : "consulta";
         if (r.status === "success") {
-          mensaje.textContent = "Llamando al turno:";
-          turno.textContent = r.turno;
+          mensaje.textContent = "Llamando al turno de " + nombre + ":";
+          turno.textContent = (tipo === "meson" ? "M-" : "") + r.turno;
         } else if (r.status === "empty") {
-          mensaje.textContent = "No hay pacientes en espera.";
-          turno.textContent = "";
+          mensaje.textContent = "No hay pacientes en espera para " + nombre + ".";
         } else {
           mensaje.textContent = r.message || "No se pudo llamar.";
         }
       } catch (e) {
         mensaje.textContent = "Sin conexión con el servidor.";
       }
-      boton.disabled = false;
-    });
+      botones.forEach(b => b.disabled = false);
+    }
+
+    document.getElementById("btn-consulta").addEventListener("click", () => llamar("consulta"));
+    document.getElementById("btn-meson").addEventListener("click", () => llamar("meson"));
   </script>
 </body>
 </html>
