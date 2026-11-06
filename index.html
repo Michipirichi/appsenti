@@ -436,44 +436,52 @@
                 </div>
             </div>
 
-            <!-- 8. AVISA TU LLEGADA -->
+                        <!-- 8. AVISA TU LLEGADA -->
             <div id="view-llegada" class="view-section hidden space-y-4">
                 <h2 class="text-base font-bold text-slate-800 px-1">Avisa tu Llegada</h2>
-                <p class="text-xs text-slate-500 px-1">Acérquese al sensor de entrada para notificar su presencia sin hacer filas.</p>
-                
-                <div class="bg-white rounded-3xl p-6 border border-slate-200 shadow-sm text-center space-y-4">
-                    <div id="qr-box" class="w-48 h-48 mx-auto bg-slate-50 border-2 border-dashed border-[#4A7C59] rounded-3xl flex flex-col items-center justify-center p-4 cursor-pointer hover:bg-emerald-50/50 transition" onclick="simularEscaneo()">
-                        <i class="fa-solid fa-ticket text-4xl text-[#4A7C59] mb-2"></i>
-                        <span class="text-xs font-bold text-slate-700 text-center">Pulsa aquí para tomar tu turno</span>
-                    </div>
+                <p class="text-xs text-slate-500 px-1">Elige el motivo de tu visita para tomar tu turno de espera.</p>
 
-                    <button onclick="simularEscaneo()" class="w-full bg-[#4A7C59] hover:bg-[#3d674b] text-white font-semibold py-3 rounded-2xl text-xs transition shadow">
-                        Avisar llegada automáticamente
+                <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3">
+                    <button onclick="tomarTurnoCita()" class="w-full bg-[#4A7C59] hover:bg-[#3d674b] text-white font-semibold py-4 rounded-2xl text-sm transition shadow flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-user-doctor"></i>
+                        <span>Vengo a una cita</span>
                     </button>
+                    <button onclick="tomarTurnoMeson()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl text-sm transition shadow flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-ticket"></i>
+                        <span>Necesito atención en el mesón</span>
+                    </button>
+                    <p id="llegada-msg" class="text-xs text-center text-slate-500 min-h-[1rem]"></p>
                 </div>
+
                 <div id="estado-turno" class="hidden bg-white rounded-3xl p-5 border border-slate-200 shadow-sm text-center space-y-2">
-                    <p class="text-xs text-slate-500">Tu número de atención</p>
+                    <p class="text-xs text-slate-500">Tu turno de consulta</p>
                     <p id="estado-mi-turno" class="text-5xl font-black text-[#4A7C59]">--</p>
                     <p class="text-xs text-slate-600">En atención ahora: <strong id="estado-actual">—</strong></p>
                     <p class="text-xs text-slate-600">Personas antes que tú: <strong id="estado-delante">0</strong></p>
                 </div>
-            </div>
 
-            <!-- 9. NOTIFICACIÓN DE TURNO -->
+                <div id="estado-meson" class="hidden bg-white rounded-3xl p-5 border border-blue-200 shadow-sm text-center space-y-2">
+                    <p class="text-xs text-blue-700 font-semibold">Tu turno en el mesón</p>
+                    <p id="meson-mi-turno" class="text-5xl font-black text-blue-600">--</p>
+                    <p class="text-xs text-slate-600">En atención ahora: <strong id="meson-actual">—</strong></p>
+                    <p class="text-xs text-slate-600">Personas antes que tú: <strong id="meson-delante">0</strong></p>
+                </div>
+            </div>
+            
+                        <!-- 9. NOTIFICACIÓN DE TURNO -->
             <div id="view-turno" class="view-section hidden flex flex-col items-center justify-center min-h-[70vh] text-center space-y-4">
-                <div class="bg-emerald-600 text-white rounded-3xl p-8 shadow-xl text-center space-y-3 w-full animate-bounce">
+                <div id="turno-card" class="bg-emerald-600 text-white rounded-3xl p-8 shadow-xl text-center space-y-3 w-full animate-bounce">
                     <span class="bg-white/20 text-white px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">Notificación en Vivo</span>
                     <h3 class="text-3xl font-black tracking-tight">¡ES TU TURNO!</h3>
-                    <div class="bg-white text-emerald-950 py-4 px-6 rounded-2xl font-bold text-base shadow-inner">
-                        Box - 04 <br>
-                        <span class="text-xs font-normal text-emerald-800">Zona Ambulatoria (Baja estimulación)</span>
+                    <div id="turno-lugar-box" class="bg-white text-emerald-950 py-4 px-6 rounded-2xl font-bold text-base shadow-inner">
+                        <span id="turno-lugar">Box - 04</span><br>
+                        <span id="turno-detalle" class="text-xs font-normal text-emerald-800">Zona Ambulatoria (Baja estimulación)</span>
                     </div>
                 </div>
                 <button onclick="switchView('menu')" class="w-full bg-slate-800 text-white py-3 rounded-2xl text-xs font-semibold">
                     Volver al Inicio
                 </button>
             </div>
-
             <!-- 10. SOS DE EMERGENCIA -->
             <div id="view-sos" class="view-section hidden flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6">
                 <div class="space-y-1">
@@ -777,30 +785,7 @@ function elegirFecha(fecha) {
                 alert('Sin conexión con el servidor. Inténtalo de nuevo.');
             }
         }
-        async function simularEscaneo() {
-            const qrBox = document.getElementById('qr-box');
-            qrBox.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-4xl text-[#4A7C59] mb-2"></i><span class="text-xs font-bold text-slate-700">Registrando llegada...</span>';
-
-            let texto = 'Llegada registrada';
-            try {
-                const resp = await fetch(URL_SCRIPT, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify({ rut: currentUser.run, token: TOKEN })
-                });
-                const r = await resp.json();
-                if (r.status === "not_found") texto = 'No encontramos tu RUN en las citas';
-                else if (r.status === "not_today") texto = 'Tu cita no es para hoy';
-                else if (r.status === "done") texto = 'Ya fuiste atendido hoy';
-                else if (r.status !== "success" && r.status !== "already") texto = 'No se pudo registrar';
-            } catch (e) {
-                texto = 'Sin conexión con el servidor';
-            }
-
-            qrBox.innerHTML = '<i class="fa-solid fa-circle-check text-4xl text-[#4A7C59] mb-2"></i><span class="text-xs font-bold text-slate-700 text-center">' + texto + '</span>';
-            consultarEstado();   // muestra enseguida el número de atención
-        }
-
+        
         function triggerSOSAlert() {
             const statusBox = document.getElementById('sos-status');
             statusBox.classList.remove('hidden');
@@ -826,19 +811,17 @@ function elegirFecha(fecha) {
         const TOKEN = "1234";
         let timerEstado = null;
         let estadoAnterior = null;
-
+        const LUGAR_MESON = "Mesón 2";   // nombre que se muestra cuando llaman al mesón
+        let estadoMesonAnterior = null;
+        
         function iniciarSeguimiento() {
             detenerSeguimiento();
             estadoAnterior = null;
+            estadoMesonAnterior = null;
             consultarEstado();
             timerEstado = setInterval(consultarEstado, 10000);   // cada 10 segundos
         }
-
-        function detenerSeguimiento() {
-            clearInterval(timerEstado);
-            timerEstado = null;
-        }
-
+        
         async function consultarEstado() {
             if (!currentUser.run) return;
             try {
@@ -848,17 +831,97 @@ function elegirFecha(fecha) {
                     body: JSON.stringify({ accion: "estado", rut: currentUser.run, token: TOKEN })
                 });
                 const r = await resp.json();
-                if (!currentUser.run || r.status !== "success") return;   // cerró sesión o RUN sin cita
+                if (!currentUser.run || r.status !== "success") return;
         
                 mostrarEstadoTurno(r);
+                mostrarEstadoMeson(r.meson);
         
+                const mesonEstado = r.meson ? r.meson.estado : null;
                 if (r.estado === "Llamado" && estadoAnterior !== "Llamado") {
-                    if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]);
-                    switchView('turno');
+                    mostrarLlamado('consulta');
+                } else if (mesonEstado === "Llamado" && estadoMesonAnterior !== "Llamado") {
+                    mostrarLlamado('meson');
                 }
                 estadoAnterior = r.estado;
+                estadoMesonAnterior = mesonEstado;
             } catch (e) { /* sin conexión: reintenta en el siguiente ciclo */ }
         }
+        
+        function mostrarEstadoMeson(m) {
+            const caja = document.getElementById('estado-meson');
+            if (!m || !m.turno || m.estado === "Atendido") { caja.classList.add('hidden'); return; }
+            caja.classList.remove('hidden');
+            document.getElementById('meson-mi-turno').innerText = 'M-' + m.turno;
+            document.getElementById('meson-actual').innerText = m.turnoActual ? 'M-' + m.turnoActual : '—';
+            document.getElementById('meson-delante').innerText = m.delante;
+        }
+        
+        // Pantalla "¡ES TU TURNO!": verde para consulta, azul para mesón
+        function mostrarLlamado(tipo) {
+            const meson = tipo === 'meson';
+            document.getElementById('turno-card').className =
+                'text-white rounded-3xl p-8 shadow-xl text-center space-y-3 w-full animate-bounce ' + (meson ? 'bg-blue-600' : 'bg-emerald-600');
+            document.getElementById('turno-lugar-box').className =
+                'bg-white py-4 px-6 rounded-2xl font-bold text-base shadow-inner ' + (meson ? 'text-blue-950' : 'text-emerald-950');
+            document.getElementById('turno-detalle').className =
+                'text-xs font-normal ' + (meson ? 'text-blue-800' : 'text-emerald-800');
+            document.getElementById('turno-lugar').innerText = meson ? LUGAR_MESON : 'Box - 04';
+            document.getElementById('turno-detalle').innerText = meson ? 'Atención en mesón' : 'Zona Ambulatoria (Baja estimulación)';
+        
+            if (navigator.vibrate) navigator.vibrate([300, 150, 300, 150, 300]);
+            switchView('turno');
+        }
+        
+        async function tomarTurnoCita() {
+            const msg = document.getElementById('llegada-msg');
+            msg.innerText = 'Registrando llegada...';
+            let texto = 'Llegada registrada. Tu turno aparece abajo.';
+            try {
+                const resp = await fetch(URL_SCRIPT, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ rut: currentUser.run, token: TOKEN })
+                });
+                const r = await resp.json();
+                if (r.status === "not_found") texto = 'No encontramos una cita para tu RUN.';
+                else if (r.status === "not_today") texto = 'Tu cita no es para hoy. Si necesitas otra atención, usa el botón del mesón.';
+                else if (r.status === "done") texto = 'Ya fuiste atendido hoy.';
+                else if (r.status !== "success" && r.status !== "already") texto = 'No se pudo registrar.';
+            } catch (e) {
+                texto = 'Sin conexión con el servidor.';
+            }
+            msg.innerText = texto;
+            consultarEstado();
+        }
+        
+        async function tomarTurnoMeson() {
+            const msg = document.getElementById('llegada-msg');
+            msg.innerText = 'Tomando turno...';
+            let texto = 'Turno de mesón registrado. Tu número aparece abajo.';
+            try {
+                const resp = await fetch(URL_SCRIPT, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ accion: "meson", rut: currentUser.run, token: TOKEN })
+                });
+                const r = await resp.json();
+                if (r.status === "already") texto = 'Ya tienes un turno esperando en el mesón.';
+                else if (r.status === "not_registered") texto = 'Debes registrarte primero.';
+                else if (r.status !== "success") texto = 'No se pudo tomar el turno: ' + (r.message || 'intenta de nuevo.');
+            } catch (e) {
+                texto = 'Sin conexión con el servidor.';
+            }
+            msg.innerText = texto;
+            consultarEstado();
+        }
+-
+
+        function detenerSeguimiento() {
+            clearInterval(timerEstado);
+            timerEstado = null;
+        }
+
+    
 
         function mostrarEstadoTurno(r) {
             const caja = document.getElementById('estado-turno');
@@ -877,6 +940,8 @@ function elegirFecha(fecha) {
             document.getElementById('login-run').value = "";
             document.getElementById('login-pass').value = "";
             document.getElementById('estado-turno').classList.add('hidden');
+            document.getElementById('estado-meson').classList.add('hidden');
+            document.getElementById('llegada-msg').innerText = '';
             if (!document.getElementById('sidebar').classList.contains('-translate-x-full')) toggleMenu();
             navHistory = ['view-login'];
             switchView('login');
