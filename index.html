@@ -78,12 +78,13 @@
                 <a href="#" onclick="switchView('agendar'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
                     <i class="fa-solid fa-plus-circle w-5 text-cyan-400"></i>
                     <span>Agendar Cita</span>
+                    
                 </a>
                 <a href="#" onclick="switchView('mapas'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
                     <i class="fa-solid fa-map-location-dot w-5 text-purple-400"></i>
                     <span>Mapas y Zonas</span>
                 </a>
-                <a href="#" onclick="switchView('recordatorio'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
+                <a href="#" onclick="('recordatorio'); toggleMenu();" class="flex items-center space-x-3 px-3.5 py-3 rounded-2xl hover:bg-slate-700/60 text-slate-200 transition">
                     <i class="fa-solid fa-bell w-5 text-amber-300"></i>
                     <span>Recordatorio y Sensores</span>
                 </a>
@@ -340,7 +341,13 @@
             <div id="view-recordatorio" class="view-section hidden space-y-4">
                 <div class="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 shadow-sm space-y-3">
                     <div class="flex items-center justify-between">
-                        <h2 class="text-base font-bold text-amber-900">Recordatorio de Cita</h2>
+                        <div class="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 shadow-sm space-y-3">
+                        <div class="flex items-center justify-between">
+                            <h2 class="text-base font-bold text-amber-900">Recordatorio de Cita</h2>
+                            <span class="px-2.5 py-1 bg-amber-200 text-amber-900 text-xs font-extrabold rounded-full">Zona Ambulatoria</span>
+                        </div>
+                        <p id="recordatorio-cita" class="text-xs font-medium text-amber-900">Buscando tu próxima cita...</p>
+                    </div>
                         <span class="px-2.5 py-1 bg-amber-200 text-amber-900 text-xs font-extrabold rounded-full">Zona Ambulatoria</span>
                     </div>
                     <p class="text-xs font-medium text-amber-900">Cita: 02/11/2026 - Psiquiatría (Hospital)</p>
@@ -520,7 +527,8 @@
             if(target) target.classList.remove('hidden');
             if (viewName === 'agendar') cargarAgenda();
             if (viewName === 'citas') cargarCitas();
-
+            if (viewName === 'recordatorio') cargarRecordatorio();
+            
             // Gestionar historial de navegación
             if (navHistory[navHistory.length - 1] !== targetId) {
                 navHistory.push(targetId);
@@ -934,7 +942,33 @@ function elegirFecha(fecha) {
                 lista.innerHTML = '<p class="text-xs text-red-500 px-1">No se pudieron cargar tus citas: ' + esc(e.message) + '</p>';
             }
         }
+        async function cargarRecordatorio() {
+            const p = document.getElementById('recordatorio-cita');
+            if (!currentUser.run) return;
+            p.innerText = 'Buscando tu próxima cita...';
+            try {
+                const resp = await fetch(URL_SCRIPT, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ accion: "citas", rut: currentUser.run, token: TOKEN })
+                });
+                const r = await resp.json();
+                if (!Array.isArray(r.citas)) throw new Error("sin datos");
         
+                const hoy = new Date().toLocaleDateString('en-CA');   // yyyy-mm-dd
+                const proximas = r.citas
+                    .filter(c => c.estado !== "Atendido" && c.fecha >= hoy)
+                    .sort((a, b) => a.fecha.localeCompare(b.fecha));
+        
+                if (!proximas.length) { p.innerText = 'No tienes citas pendientes.'; return; }
+        
+                const c = proximas[0];
+                const fecha = c.fecha.split('-').reverse().join('/');
+                p.innerText = 'Cita: ' + fecha + ' - ' + (c.especialidad || 'Consulta') + (c.centro ? ' (' + c.centro + ')' : '');
+            } catch (e) {
+                p.innerText = 'No se pudo cargar tu próxima cita.';
+            }
+        }
     </script>
 </body>
 </html>
