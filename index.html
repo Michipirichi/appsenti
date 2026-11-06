@@ -640,7 +640,9 @@
                     alert('No se pudo iniciar sesión: ' + (r.message || 'intenta de nuevo.'));
                 }
             } catch (e) {
-                alert('Sin conexión con el servidor. Inténtalo de nuevo.');
+                    } catch (e) {
+                        alert('Error: ' + e.message);
+                    }
             }
         }
         
