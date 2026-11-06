@@ -618,12 +618,12 @@
             iniciarSeguimiento();
             switchView('menu');
         }
-        
+
         async function handleLogin(event) {
             event.preventDefault();
             const run = document.getElementById('login-run').value.trim();
             if (!run) return;
-        
+
             try {
                 const resp = await fetch(URL_SCRIPT, {
                     method: "POST",
@@ -631,7 +631,7 @@
                     body: JSON.stringify({ accion: "login", rut: run, token: TOKEN })
                 });
                 const r = await resp.json();
-        
+
                 if (r.status === "success") {
                     entrarComoPaciente(r.paciente);
                 } else if (r.status === "not_found") {
@@ -640,11 +640,10 @@
                     alert('No se pudo iniciar sesión: ' + (r.message || 'intenta de nuevo.'));
                 }
             } catch (e) {
-                    } catch (e) {
-                        alert('Error: ' + e.message);
-                    }
+                alert('Error: ' + e.message);
             }
         }
+
         
         async function guardarRegistroFicha() {
             const run = document.getElementById('reg-run').value.trim();
@@ -916,7 +915,6 @@ function elegirFecha(fecha) {
             msg.innerText = texto;
             consultarEstado();
         }
--
 
         function detenerSeguimiento() {
             clearInterval(timerEstado);
