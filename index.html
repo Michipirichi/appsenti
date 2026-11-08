@@ -139,7 +139,8 @@
                     <form onsubmit="handleLogin(event)" class="space-y-4 text-left">
                         <div>
                             <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">RUN del Paciente</label>
-                            <input type="text" id="login-run" placeholder="Ej: 12.345.678-9" required
+                            <input type="text" id="login-run" placeholder="Ej: 12.345.678-9" required maxlength="12" autocomplete="off"
+                                onblur="this.value = formatearRut(this.value)"
                                 class="w-full px-4 py-3 rounded-2xl bg-slate-50 border border-slate-200 focus:ring-2 focus:ring-[#4A7C59] focus:outline-none text-sm font-medium">
                         </div>
                         <div>
@@ -167,7 +168,9 @@
 
                     <div class="form-group">
                         <label class="block text-xs font-semibold text-slate-600 mb-1">RUN</label>
-                        <input type="text" id="reg-run" placeholder="Ej: 12.345.678-9" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                        <input type="text" id="reg-run" placeholder="Ej: 12.345.678-9" maxlength="12" autocomplete="off"
+                            onblur="this.value = formatearRut(this.value)"
+                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
                     </div>
                         
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo</label>
@@ -665,7 +668,7 @@
         
         async function handleLogin(event) {
             event.preventDefault();
-            const run = document.getElementById('login-run').value.trim();
+            const run = formatearRut(document.getElementById('login-run').value.trim());
             if (!run) return;
 
             try {
@@ -723,7 +726,7 @@
         }
 
         async function guardarRegistroFicha() {
-            const run = document.getElementById('reg-run').value.trim();
+            const run = formatearRut(document.getElementById('reg-run').value.trim());
             const nombre = document.getElementById('reg-nombre').value.trim();
             const telPaciente = document.getElementById('reg-tel-paciente').value.trim();
             const telContacto = document.getElementById('reg-telefono').value.trim();
@@ -1119,6 +1122,15 @@ function elegirFecha(fecha) {
             document.getElementById('edit-telefono').value = currentUser.telefono;
         }
 
+        // Da formato 12.345.678-9 a un RUN sin importar cómo se escriba
+        function formatearRut(valor) {
+            const limpio = String(valor).replace(/[^0-9kK]/g, "").toUpperCase().slice(0, 9);
+            if (limpio.length <= 1) return limpio;
+            const cuerpo = limpio.slice(0, -1).replace(/K/g, "");
+            const dv = limpio.slice(-1);
+            return cuerpo.replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "-" + dv;
+        }
+        
         async function guardarPerfil() {
             if (!currentUser.run) { alert('Primero inicia sesión.'); return; }
 
