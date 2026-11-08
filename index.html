@@ -174,6 +174,10 @@
                         <input type="text" id="reg-nombre" placeholder="Ej: Juan Pérez" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
                     </div>
                     <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tu Teléfono (opcional)</label>
+                        <input type="tel" id="reg-tel-paciente" placeholder="Ej: +56 9 1234 5678" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
                         <label class="block text-xs font-semibold text-slate-600 mb-1">Condición Principal</label>
                         <input type="text" id="reg-condicion" value="T.E.A. - Hipersensible" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
                     </div>
@@ -262,6 +266,7 @@
                         <div class="mt-1 text-xs text-slate-700 space-y-1">
                             <p><strong>Nombre:</strong> <span id="ficha-lbl-nombre">Juan Pérez</span></p>
                             <p><strong>RUN:</strong> <span id="ficha-lbl-run">12.345.678-9</span></p>
+                            <p><strong>Teléfono:</strong> <span id="ficha-lbl-telpac">—</span></p>
                         </div>
                     </div>
 
@@ -288,9 +293,66 @@
                             <p><strong>Teléfono:</strong> <span id="ficha-lbl-tel">+56 9 8765 4321</span></p>
                         </div>
                     </div>
+
+                    <button onclick="switchView('editar-perfil')" class="w-full bg-[#4A7C59] hover:bg-[#3d674b] text-white font-semibold py-3 rounded-xl text-xs transition shadow flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-pen"></i>
+                        <span>Editar perfil</span>
+                    </button>
                 </div>
             </div>
 
+            <!-- EDITAR PERFIL -->
+            <div id="view-editar-perfil" class="view-section hidden space-y-4">
+                <div class="space-y-1">
+                    <h2 class="text-base font-bold text-slate-800">Editar Perfil</h2>
+                    <p class="text-xs text-slate-500">Tu nombre y tu RUN no se pueden modificar.</p>
+                </div>
+
+                <div class="bg-white rounded-3xl p-5 border border-slate-200 shadow-sm space-y-3.5">
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">RUN</label>
+                        <input type="text" id="edit-run" disabled class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-100 text-slate-500">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre Completo</label>
+                        <input type="text" id="edit-nombre" disabled class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-100 text-slate-500">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tu Teléfono</label>
+                        <input type="tel" id="edit-tel-paciente" placeholder="Ej: +56 9 1234 5678" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Condición Principal</label>
+                        <input type="text" id="edit-condicion" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Preferencias Sensoriales</label>
+                        <input type="text" id="edit-preferencias" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+
+                    <hr class="border-slate-100 my-2">
+                    <h3 class="text-xs font-bold text-[#4A7C59] uppercase tracking-wider">Contacto de Emergencia</h3>
+
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Nombre del Contacto</label>
+                        <input type="text" id="edit-contacto-nombre" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Parentesco con el Paciente</label>
+                        <input type="text" id="edit-parentesco" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+                    <div class="form-group">
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Teléfono de Contacto</label>
+                        <input type="tel" id="edit-telefono" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs bg-slate-50">
+                    </div>
+
+                    <button onclick="guardarPerfil()" class="w-full bg-[#4A7C59] hover:bg-[#3d674b] text-white font-semibold py-3 rounded-xl text-xs transition shadow mt-2">
+                        Guardar cambios
+                    </button>
+                </div>
+            </div>
+
+            
             <!-- 5. VISTA DE MIS CITAS -->
             <div id="view-citas" class="view-section hidden space-y-4">
                 <div class="flex items-center justify-between px-1">
@@ -529,6 +591,7 @@
             if (viewName === 'agendar') cargarAgenda();
             if (viewName === 'citas') cargarCitas();
             if (viewName === 'recordatorio') cargarRecordatorio();
+            if (viewName === 'editar-perfil') cargarFormularioPerfil();
             
             // Gestionar historial de navegación
             if (navHistory[navHistory.length - 1] !== targetId) {
@@ -558,6 +621,7 @@
                 const titles = {
                     'menu': 'Senti - Menú Principal',
                     'registro-ficha': 'Registro de Ficha',
+                    'editar-perfil': 'Editar Perfil',
                     'ficha': 'Ficha Médica Unificada',
                     'citas': 'Mis Citas Médicas',
                     'agendar': 'Agendar Cita',
@@ -597,22 +661,8 @@
             switchView('registro-ficha');
         }
         
-        function entrarComoPaciente(p) {
-            currentUser.run = p.run;
-            currentUser.nombre = p.nombre;
-            currentUser.condicion = p.condicion;
-            currentUser.preferencias = p.preferencias;
-            currentUser.contactoNombre = p.contactoNombre;
-            currentUser.parentesco = p.parentesco;
-            currentUser.telefono = p.telefono;
         
-            localStorage.setItem("run", p.run.replace(/\./g, "").replace(/\s/g, "").toUpperCase());
-            document.getElementById('drawer-run-text').innerText = 'RUN: ' + p.run;
-            actualizarDatosUI();
-            iniciarSeguimiento();
-            switchView('menu');
-        }
-
+        
         async function handleLogin(event) {
             event.preventDefault();
             const run = document.getElementById('login-run').value.trim();
@@ -639,40 +689,21 @@
         }
 
         
-        async function guardarRegistroFicha() {
-            const run = document.getElementById('reg-run').value.trim();
-            const nombre = document.getElementById('reg-nombre').value.trim();
-            if (!run || !nombre) { alert('El RUN y el nombre son obligatorios.'); return; }
-        
-            const datos = {
-                accion: "registrar", token: TOKEN, rut: run, nombre: nombre,
-                condicion: document.getElementById('reg-condicion').value.trim(),
-                preferencias: document.getElementById('reg-preferencias').value.trim(),
-                contactoNombre: document.getElementById('reg-contacto-nombre').value.trim(),
-                parentesco: document.getElementById('reg-parentesco').value.trim(),
-                telefono: document.getElementById('reg-telefono').value.trim()
-            };
-        
-            try {
-                const resp = await fetch(URL_SCRIPT, {
-                    method: "POST",
-                    headers: { "Content-Type": "text/plain;charset=utf-8" },
-                    body: JSON.stringify(datos)
-                });
-                const r = await resp.json();
-        
-                if (r.status === "success") {
-                    alert('¡Registro exitoso!');
-                    entrarComoPaciente(r.paciente);
-                } else if (r.status === "exists") {
-                    alert('Este RUN ya está registrado. Inicia sesión.');
-                    switchView('login');
-                } else {
-                    alert('No se pudo registrar: ' + (r.message || 'intenta de nuevo.'));
-                }
-            } catch (e) {
-                alert('Sin conexión con el servidor. Inténtalo de nuevo.');
-            }
+        function entrarComoPaciente(p) {
+            currentUser.run = p.run;
+            currentUser.nombre = p.nombre;
+            currentUser.condicion = p.condicion;
+            currentUser.preferencias = p.preferencias;
+            currentUser.contactoNombre = p.contactoNombre;
+            currentUser.parentesco = p.parentesco;
+            currentUser.telefono = p.telefono;
+            currentUser.telefonoPaciente = p.telefonoPaciente || "";
+
+            localStorage.setItem("run", p.run.replace(/\./g, "").replace(/\s/g, "").toUpperCase());
+            document.getElementById('drawer-run-text').innerText = 'RUN: ' + p.run;
+            actualizarDatosUI();
+            iniciarSeguimiento();
+            switchView('menu');
         }
 
         function actualizarDatosUI() {
@@ -683,6 +714,7 @@
 
             document.getElementById('ficha-lbl-nombre').innerText = currentUser.nombre;
             document.getElementById('ficha-lbl-run').innerText = currentUser.run;
+            document.getElementById('ficha-lbl-telpac').innerText = currentUser.telefonoPaciente || '—';
             document.getElementById('ficha-lbl-condicion').innerText = currentUser.condicion;
             document.getElementById('ficha-lbl-preferencias').innerText = 'Preferencias: ' + currentUser.preferencias;
             document.getElementById('ficha-lbl-contacto').innerText = currentUser.contactoNombre;
@@ -690,6 +722,49 @@
             document.getElementById('ficha-lbl-tel').innerText = currentUser.telefono;
         }
 
+        async function guardarRegistroFicha() {
+            const run = document.getElementById('reg-run').value.trim();
+            const nombre = document.getElementById('reg-nombre').value.trim();
+            const telPaciente = document.getElementById('reg-tel-paciente').value.trim();
+            const telContacto = document.getElementById('reg-telefono').value.trim();
+            if (!run || !nombre) { alert('El RUN y el nombre son obligatorios.'); return; }
+            if (!telefonoValido(telPaciente) || !telefonoValido(telContacto)) {
+                alert('Revisa el teléfono: usa solo números, +, espacios o guiones.');
+                return;
+            }
+
+            const datos = {
+                accion: "registrar", token: TOKEN, rut: run, nombre: nombre,
+                telefonoPaciente: telPaciente,
+                condicion: document.getElementById('reg-condicion').value.trim(),
+                preferencias: document.getElementById('reg-preferencias').value.trim(),
+                contactoNombre: document.getElementById('reg-contacto-nombre').value.trim(),
+                parentesco: document.getElementById('reg-parentesco').value.trim(),
+                telefono: telContacto
+            };
+
+            try {
+                const resp = await fetch(URL_SCRIPT, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify(datos)
+                });
+                const r = await resp.json();
+
+                if (r.status === "success") {
+                    alert('¡Registro exitoso!');
+                    entrarComoPaciente(r.paciente);
+                } else if (r.status === "exists") {
+                    alert('Este RUN ya está registrado. Inicia sesión.');
+                    switchView('login');
+                } else {
+                    alert('No se pudo registrar: ' + (r.message || 'intenta de nuevo.'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }        
+        
         let agenda = [];
 let fechaElegida = "";
 
@@ -1027,6 +1102,69 @@ function elegirFecha(fecha) {
                 p.innerText = 'No se pudo cargar tu próxima cita.';
             }
         }
+
+        // Vacío es válido (el teléfono es opcional); si hay algo, solo números, +, ( ), espacios y guiones
+        function telefonoValido(t) {
+            return t === "" || /^[0-9+()\s-]{7,20}$/.test(t);
+        }
+
+        function cargarFormularioPerfil() {
+            document.getElementById('edit-run').value = currentUser.run;
+            document.getElementById('edit-nombre').value = currentUser.nombre;
+            document.getElementById('edit-tel-paciente').value = currentUser.telefonoPaciente || "";
+            document.getElementById('edit-condicion').value = currentUser.condicion;
+            document.getElementById('edit-preferencias').value = currentUser.preferencias;
+            document.getElementById('edit-contacto-nombre').value = currentUser.contactoNombre;
+            document.getElementById('edit-parentesco').value = currentUser.parentesco;
+            document.getElementById('edit-telefono').value = currentUser.telefono;
+        }
+
+        async function guardarPerfil() {
+            if (!currentUser.run) { alert('Primero inicia sesión.'); return; }
+
+            const telPaciente = document.getElementById('edit-tel-paciente').value.trim();
+            const telContacto = document.getElementById('edit-telefono').value.trim();
+            if (!telefonoValido(telPaciente) || !telefonoValido(telContacto)) {
+                alert('Revisa el teléfono: usa solo números, +, espacios o guiones.');
+                return;
+            }
+
+            try {
+                const resp = await fetch(URL_SCRIPT, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({
+                        accion: "perfil", token: TOKEN, rut: currentUser.run,
+                        telefonoPaciente: telPaciente,
+                        condicion: document.getElementById('edit-condicion').value.trim(),
+                        preferencias: document.getElementById('edit-preferencias').value.trim(),
+                        contactoNombre: document.getElementById('edit-contacto-nombre').value.trim(),
+                        parentesco: document.getElementById('edit-parentesco').value.trim(),
+                        telefono: telContacto
+                    })
+                });
+                const r = await resp.json();
+
+                if (r.status === "success") {
+                    const p = r.paciente;
+                    currentUser.condicion = p.condicion;
+                    currentUser.preferencias = p.preferencias;
+                    currentUser.contactoNombre = p.contactoNombre;
+                    currentUser.parentesco = p.parentesco;
+                    currentUser.telefono = p.telefono;
+                    currentUser.telefonoPaciente = p.telefonoPaciente || "";
+                    actualizarDatosUI();
+                    alert('¡Perfil actualizado!');
+                    switchView('ficha');
+                } else {
+                    alert('No se pudo guardar: ' + (r.message || 'intenta de nuevo.'));
+                }
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        
     </script>
 </body>
 </html>
