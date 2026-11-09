@@ -1,0 +1,140 @@
+#include <WiFi.h>
+#include <HTTPClient.h>
+#include <ArduinoJson.h>
+
+// ==========================================
+// 1. CONFIGURACIÓN DE TU RED WIFI
+// ==========================================
+const char* ssid = "TU_NOMBRE_DE_WIFI";       // Nombre de tu red WiFi (2.4 GHz)
+const char* password = "TU_CONTRASEÑA_WIFI";   // Contraseña de tu WiFi
+
+// ==========================================
+// 2. URL DE GOOGLE APPS SCRIPT
+// ==========================================
+// Pega aquí la URL que obtuviste al presionar Implementar
+const char* serverUrl = "https://script.google.com/macros/s/TU_SCRIPT_ID/exec";
+
+// ==========================================
+// 3. PINES DE SENSORES EN EL ESP32
+// ==========================================
+// Ultrasónicos (Conteo de personas)
+const int TRIG_A = 25; // Sensor Exterior (Entrada)
+const int ECHO_A = 26;
+const int TRIG_B = 27; // Sensor Interior (Salida)
+const int ECHO_B = 14;
+
+// Sensores Analógicos
+const int PIN_LUZ = 34;    // GPIO 34
+const int PIN_SONIDO = 35; // GPIO 35
+
+// Variables de control
+int cantidadPersonas = 0;
+const int DISTANCIA_UMBRAL = 30; // Distancia en cm para detectar paso
+unsigned long ultimoPaso = 0;
+const unsigned long DELAY_DETECCION = 800; // ms entre conteos
+
+unsigned long ultimoEnvio = 0;
+const unsigned long INTERVALO_ENVIO = 3000; // Envía a Google Sheets cada 3 segundos
+
+void setup() {
+  Serial.begin(115200);
+
+  // Pines de ultrasónicos
+  pinMode(TRIG_A, OUTPUT);
+  pinMode(ECHO_A, INPUT);
+  pinMode(TRIG_B, OUTPUT);
+  pinMode(ECHO_B, INPUT);
+
+  digitalWrite(TRIG_A, LOW);
+  digitalWrite(TRIG_B, LOW);
+
+  // Conexión WiFi
+  WiFi.begin(ssid, password);
+  Serial.print("Conectando a WiFi");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\n¡Conectado a WiFi con éxito!");
+  Serial.print("IP: ");
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  // 1. Lectura de sensores de luz y sonido
+  int nivelLuz = analogRead(PIN_LUZ);
+  int nivelSonido = analogRead(PIN_SONIDO);
+
+  // 2. Medición de distancias en los ultrasónicos
+  long distA = medirDistancia(TRIG_A, ECHO_A);
+  long distB = medirDistancia(TRIG_B, ECHO_B);
+
+  // 3. Lógica de conteo de entrada / salida
+  if (millis() - ultimoPaso > DELAY_DETECCION) {
+    if (distA > 0 && distA < DISTANCIA_UMBRAL) {
+      cantidadPersonas++;
+      ultimoPaso = millis();
+      Serial.println("-> Alguien entró. Total personas: " + String(cantidadPersonas));
+    } 
+    else if (distB > 0 && distB < DISTANCIA_UMBRAL) {
+      if (cantidadPersonas > 0) {
+        cantidadPersonas--;
+      }
+      ultimoPaso = millis();
+      Serial.println("<- Alguien salió. Total personas: " + String(cantidadPersonas));
+    }
+  }
+
+  // 4. Envío periódico a la base de datos (Google Sheets)
+  if (millis() - ultimoEnvio > INTERVALO_ENVIO) {
+    if (WiFi.status() == WL_CONNECTED) {
+      enviarAGoogleSheets(nivelLuz, nivelSonido, cantidadPersonas);
+    } else {
+      Serial.println("Error: Conexión WiFi perdida.");
+    }
+    ultimoEnvio = millis();
+  }
+
+  delay(100);
+}
+
+// Función auxiliar para calcular distancia en cm
+long medirDistancia(int trigPin, int echoPin) {
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  long duracion = pulseIn(echoPin, HIGH, 30000); // Timeout 30ms
+  if (duracion == 0) return 999;
+  
+  return (duracion * 0.034) / 2;
+}
+
+// Función encargada del envío HTTP POST a Google Apps Script
+void enviarAGoogleSheets(int luz, int sonido, int personas) {
+  HTTPClient http;
+  
+  http.begin(serverUrl);
+  http.addHeader("Content-Type", "application/json");
+  http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
+
+  // Creación del paquete JSON
+  StaticJsonDocument<200> doc;
+  doc["luz"] = luz;
+  doc["sonido"] = sonido;
+  doc["personas"] = personas;
+
+  String jsonString;
+  serializeJson(doc, jsonString);
+
+  // Envío POST
+  int httpCode = http.POST(jsonString);
+  
+  if (httpCode > 0) {
+    Serial.printf("Base de datos actualizada | HTTP Code: %d\n", httpCode);
+  } else {
+    Serial.printf("Error al enviar a Google Sheets: %s\n", http.errorToString(httpCode).c_str());
+  }
+
+  http.end();
+}
