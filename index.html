@@ -1027,7 +1027,7 @@ function elegirFecha(fecha) {
             const lista = document.getElementById('lista-citas');
             if (!currentUser.run) return;
             lista.innerHTML = '<p class="text-xs text-slate-400 px-1">Cargando tus citas...</p>';
-        
+
             try {
                 const resp = await fetch(URL_SCRIPT, {
                     method: "POST",
@@ -1036,26 +1036,29 @@ function elegirFecha(fecha) {
                 });
                 const r = await resp.json();
                 if (r.status !== "success") throw new Error(r.message || ("respuesta inesperada: " + JSON.stringify(r)));
-        
-                // Primero las pendientes (de la más cercana a la más lejana), luego las atendidas
-                const citas = r.citas.slice().sort((a, b) => {
-                    const x = a.estado === "Atendido" ? 1 : 0, y = b.estado === "Atendido" ? 1 : 0;
-                    return x - y || a.fecha.localeCompare(b.fecha);
-                });
-        
+
+                const hoy = new Date().toLocaleDateString('en-CA');   // yyyy-mm-dd
+
+                // Solo citas de hoy en adelante; primero las pendientes, luego las atendidas
+                const citas = r.citas
+                    .filter(c => !c.fecha || c.fecha >= hoy)
+                    .sort((a, b) => {
+                        const x = a.estado === "Atendido" ? 1 : 0, y = b.estado === "Atendido" ? 1 : 0;
+                        return x - y || a.fecha.localeCompare(b.fecha);
+                    });
+
                 if (!citas.length) {
                     lista.innerHTML = '<p class="text-xs text-slate-400 px-1">Aún no tienes citas. Pulsa "Agendar" para pedir una.</p>';
                     return;
                 }
-        
-                const hoy = new Date().toLocaleDateString('en-CA');   // yyyy-mm-dd
+
                 const colores = {
                     'Llamado': 'bg-emerald-100 text-emerald-800',
                     'En espera': 'bg-blue-100 text-blue-800',
                     'Atendido': 'bg-slate-100 text-slate-500'
                 };
                 let proximaMarcada = false;
-        
+
                 lista.innerHTML = citas.map(c => {
                     const atendida = c.estado === "Atendido";
                     const esProxima = !proximaMarcada && !atendida && c.fecha >= hoy;
@@ -1063,7 +1066,7 @@ function elegirFecha(fecha) {
                     const estado = c.estado || 'Agendada';
                     const colorEstado = colores[estado] || 'bg-amber-50 text-amber-800';
                     const fechaCorta = c.fecha ? c.fecha.split('-').reverse().join('/') : '';
-        
+
                     return `<div class="bg-white rounded-3xl p-4 shadow-sm space-y-2 relative overflow-hidden ${esProxima ? 'border-2 border-amber-300' : 'border border-slate-200'} ${atendida ? 'opacity-60' : ''}">
                         ${esProxima ? '<div class="absolute top-0 right-0 bg-amber-400 text-amber-950 text-[10px] font-bold px-3 py-0.5 rounded-bl-xl">Próxima Cita</div>' : ''}
                         <div class="flex items-center justify-between">
@@ -1078,6 +1081,7 @@ function elegirFecha(fecha) {
                 lista.innerHTML = '<p class="text-xs text-red-500 px-1">No se pudieron cargar tus citas: ' + esc(e.message) + '</p>';
             }
         }
+        
         async function cargarRecordatorio() {
             const p = document.getElementById('recordatorio-cita');
             if (!p || !currentUser.run) return;
