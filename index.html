@@ -41,6 +41,29 @@
             background: #cbd5e1;
             border-radius: 4px;
         }
+
+        .punto-mapa {
+            position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; padding: 0;
+            border-radius: 9999px; border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); cursor: pointer;
+        }
+        .punto-mapa::after {
+            content: ""; position: absolute; inset: -3px; border-radius: 9999px; background: inherit;
+            opacity: .45; animation: pulso-suave 3.2s ease-in-out infinite; pointer-events: none;
+        }
+        .punto-mapa.activo { outline: 3px solid rgba(30, 41, 59, .55); outline-offset: 3px; }
+        .punto-verde { background-color: #22c55e; }
+        .punto-ambar { background-color: #f59e0b; }
+        .punto-rojo { background-color: #ef4444; }
+        .punto-gris { background-color: #94a3b8; }
+        @keyframes pulso-suave {
+            0%, 100% { transform: scale(1); opacity: .45; }
+            50% { transform: scale(1.6); opacity: 0; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .punto-mapa::after { animation: none; opacity: .25; }
+        }
+
+        
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center py-0 sm:py-6">
@@ -401,7 +424,7 @@
                 </div>
             </div>
 
-            <!-- 6. RECORDATORIO Y SENSORES DE ARDUINO -->
+            <!-- 6. RECORDATORIO Y AMBIENTE -->
             <div id="view-recordatorio" class="view-section hidden space-y-4">
                 <div class="bg-amber-50 border-2 border-amber-300 rounded-3xl p-5 shadow-sm space-y-3">
                     <div class="flex items-center justify-between">
@@ -412,86 +435,39 @@
                 </div>
 
                 <div class="space-y-3">
-                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Métricas Ambientales (Base de Datos / Arduino)</h3>
-
-                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg">
-                                <i class="fa-solid fa-lightbulb"></i>
-                            </div>
-                            <div>
-                                <span class="text-xs font-bold text-slate-700 block">Luz Ambiental</span>
-                                <span class="text-[10px] text-slate-400">Sensor Fotorresistencia LDR</span>
-                            </div>
-                        </div>
-                        <span id="metric-luz" class="text-sm font-black text-amber-700">350 Lux</span>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-lg">
-                                <i class="fa-solid fa-volume-high"></i>
-                            </div>
-                            <div>
-                                <span class="text-xs font-bold text-slate-700 block">Nivel de Sonido</span>
-                                <span class="text-[10px] text-slate-400">Sensor Micrófono KY-037</span>
-                            </div>
-                        </div>
-                        <span id="metric-sonido" class="text-sm font-black text-red-600">70 dB</span>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg">
-                                <i class="fa-solid fa-users"></i>
-                            </div>
-                            <div>
-                                <span class="text-xs font-bold text-slate-700 block">Aglomeración de gente</span>
-                                <span class="text-[10px] text-slate-400">Sensor Infrarrojo / Distancia</span>
-                            </div>
-                        </div>
-                        <span id="metric-aglom" class="text-sm font-black text-blue-700">4 personas</span>
-                    </div>
-
-                    <button onclick="actualizarMetricasArduino()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl text-xs transition shadow flex items-center justify-center space-x-2">
+                    <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider px-1">Ambiente del lugar</h3>
+                    <div id="amb-resumen"><p class="text-xs text-slate-400 px-1">Cargando...</p></div>
+                    <div id="amb-factores" class="space-y-3"></div>
+                    <button onclick="cargarAmbiente()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold py-3 rounded-xl text-xs transition shadow flex items-center justify-center space-x-2">
                         <i class="fa-solid fa-rotate"></i>
-                        <span>Actualizar Métricas en Vivo (Simulación DB)</span>
+                        <span>Actualizar</span>
                     </button>
                 </div>
             </div>
-
             
             <!-- 7. MAPAS Y ZONAS -->
             <div id="view-mapas" class="view-section hidden space-y-4">
-                <h2 class="text-base font-bold text-slate-800 px-1">Mapa del Recinto y Zonas</h2>
-                
-                <div class="bg-white rounded-3xl p-4 border border-slate-200 shadow-sm space-y-3">
-                    <div class="bg-emerald-50 border border-emerald-200 p-3 rounded-xl text-xs text-emerald-800 flex items-center space-x-2">
-                        <i class="fa-solid fa-shield-heart text-emerald-600 text-base"></i>
-                        <span>Siga la ruta hacia la <strong>zona baja de estímulos</strong> y la <strong>Zona Ambulatoria</strong>.</span>
+                <h2 class="text-base font-bold text-slate-800 px-1">Mapa del Recinto</h2>
+
+                <div class="bg-white rounded-3xl p-3 border border-slate-200 shadow-sm space-y-3">
+                    <div class="relative w-full overflow-hidden rounded-2xl">
+                        <img src="plano.png" alt="Plano del recinto" class="w-full h-auto block select-none">
+                        <button id="punto-sala" type="button" onclick="elegirPunto('sala')" aria-label="Sala de espera"
+                            class="punto-mapa punto-gris activo" style="left:48%; top:30%;"></button>
+                        <button id="punto-zona" type="button" onclick="elegirPunto('zona')" aria-label="Zona baja de estímulos"
+                            class="punto-mapa punto-verde" style="left:24%; top:77%;"></button>
                     </div>
 
-                    <div class="relative bg-slate-100 rounded-2xl overflow-hidden border border-slate-300 h-64 flex items-center justify-center">
-                        <svg viewBox="0 0 400 300" class="w-full h-full object-cover">
-                            <rect x="40" y="40" width="320" height="220" fill="#e2e8f0" rx="12"/>
-                            <rect x="70" y="70" width="260" height="160" fill="#ffffff" rx="8"/>
-                            <rect x="80" y="80" width="110" height="70" fill="#d1fae5" stroke="#10b981" stroke-width="2" stroke-dasharray="4"/>
-                            <text x="135" y="115" font-size="10" font-weight="bold" fill="#047857" text-anchor="middle">Zona Baja</text>
-                            <text x="135" y="127" font-size="9" fill="#047857" text-anchor="middle">de Estímulos</text>
-                            
-                            <rect x="230" y="80" width="80" height="30" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
-                            <text x="270" y="99" font-size="10" font-weight="bold" fill="#b45309" text-anchor="middle">Box 04</text>
+                    <p class="text-[11px] text-slate-400 text-center">Toca un punto para ver más</p>
 
-                            <rect x="175" y="230" width="50" height="15" fill="#3b82f6" rx="3"/>
-                            <text x="200" y="241" font-size="9" fill="#ffffff" font-weight="bold" text-anchor="middle">Entrada</text>
-                        </svg>
+                    <div class="flex justify-center flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-500">
+                        <span><span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span>Bajo</span>
+                        <span><span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 mr-1"></span>Medio</span>
+                        <span><span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 mr-1"></span>Alto</span>
+                        <span><span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-400 mr-1"></span>Sin datos</span>
                     </div>
 
-                    <div class="text-xs text-slate-500 space-y-1 px-1">
-                        <p class="font-semibold text-slate-700">Referencias oficiales:</p>
-                        <p>• <span class="text-emerald-600 font-medium">Zona baja de estímulos:</span> Espacio silencioso de espera.</p>
-                        <p>• <span class="text-amber-600 font-medium">Zona Ambulatoria / Box 04:</span> Destino para consulta médica.</p>
-                    </div>
+                    <div id="mapa-tarjeta"><p class="text-xs text-slate-400 text-center">Cargando...</p></div>
                 </div>
             </div>
 
@@ -595,6 +571,7 @@
             if (viewName === 'citas') cargarCitas();
             if (viewName === 'recordatorio') cargarRecordatorio();
             if (viewName === 'editar-perfil') cargarFormularioPerfil();
+            if (viewName === 'mapas' || viewName === 'recordatorio') iniciarAmbiente();
             
             // Gestionar historial de navegación
             if (navHistory[navHistory.length - 1] !== targetId) {
@@ -628,8 +605,8 @@
                     'ficha': 'Ficha Médica Unificada',
                     'citas': 'Mis Citas Médicas',
                     'agendar': 'Agendar Cita',
-                    'recordatorio': 'Sensores & Recordatorio',
-                    'mapas': 'Mapa & Zonas',
+                    'recordatorio': 'Ambiente del lugar',
+                    'mapas': 'Mapa del Recinto',
                     'llegada': 'Avisa tu Llegada',
                     'turno': 'Notificación de Turno',
                     'sos': 'Asistencia S.O.S.'
@@ -867,18 +844,7 @@ function elegirFecha(fecha) {
             }
         }
 
-        function actualizarMetricasArduino() {
-            // Valores simulados directamente desde la Base de Datos / Arduino
-            const luces = ['180 Lux (Tenue)', '350 Lux (Normal)', '610 Lux (Alto)', '420 Lux'];
-            const sonidos = ['45 dB (Silencioso)', '60 dB', '70 dB (Moderado)', '82 dB (Ruidoso)'];
-            const aglomeraciones = ['2 personas', '4 personas', '6 personas (Sala con flujo)', '1 persona'];
 
-            document.getElementById('metric-luz').innerText = luces[Math.floor(Math.random() * luces.length)];
-            document.getElementById('metric-sonido').innerText = sonidos[Math.floor(Math.random() * sonidos.length)];
-            document.getElementById('metric-aglom').innerText = aglomeraciones[Math.floor(Math.random() * aglomeraciones.length)];
-            
-            alert('Datos actualizados desde los sensores de Arduino (Base de Datos en vivo).');
-        }
 
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbymsltMTw96xQ_nwT5t-NHWkkPikSlA3IbTxi385R32zndN1uRhSETfm-yhKdqx9OQmUw/exec";
         const TOKEN = "1234";
@@ -1180,6 +1146,152 @@ function elegirFecha(fecha) {
             }
         }
 
+        // ====== AMBIENTE DEL LUGAR (mapa y detalle) ======
+        const ZONA_SALA_APP = "Sala de espera";   // debe coincidir con la zona que envía el circuito
+        const PALABRAS = {
+            luz: ['Luz suave', 'Luz normal', 'Luz muy fuerte'],
+            sonido: ['Silencioso', 'Ruido moderado', 'Ruido alto'],
+            personas: ['Pocas personas', 'Algo de gente', 'Muchas personas']
+        };
+        const FRASES = {
+            luz: ['luz suave', 'luz normal', 'luz muy fuerte'],
+            sonido: ['silencio', 'ruido moderado', 'ruido alto'],
+            personas: ['pocas personas', 'algo de gente', 'muchas personas']
+        };
+        const NOMBRE_FACTOR = { luz: 'Luz', sonido: 'Sonido', personas: 'Personas' };
+        const ICONO_FACTOR = { luz: 'fa-lightbulb', sonido: 'fa-volume-high', personas: 'fa-users' };
+        const TITULO_NIVEL = ['Zona baja en estímulos', 'Zona media en estímulos', 'Zona alta en estímulos'];
+        const DESCRIPCION_NIVEL = [
+            'Nivel cómodo para la mayoría.',
+            'Puede resultar molesto para algunas personas.',
+            'Puede ser muy intenso para personas sensibles.'
+        ];
+        const CLASE_PUNTO = ['punto-verde', 'punto-ambar', 'punto-rojo'];
+        const COLOR_TARJETA = [
+            'bg-emerald-50 border-emerald-200 text-emerald-900',
+            'bg-amber-50 border-amber-200 text-amber-900',
+            'bg-red-50 border-red-200 text-red-900'
+        ];
+        const COLOR_BARRA = ['bg-emerald-500', 'bg-amber-500', 'bg-red-500'];
+
+        let ambiente = null;       // última respuesta del script
+        let timerAmbiente = null;
+        let puntoActivo = 'sala';
+
+        function unir(lista) {
+            if (lista.length <= 1) return lista.join('');
+            return lista.slice(0, -1).join(', ') + ' y ' + lista[lista.length - 1];
+        }
+
+        function capitalizar(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+
+        // La causa se escribe a partir de los niveles que calculó el script desde cada valor
+        function textoCausa(z) {
+            if (z.nivel === 0) {
+                return capitalizar(unir(['luz', 'sonido', 'personas'].map(k => FRASES[k][0]))) + '.';
+            }
+            return 'Por ' + unir(z.causas.map(k => FRASES[k][z.nivel])) + '.';
+        }
+
+        function detalleValor(k, f, u) {
+            const rango = 'Bajo: menos de ' + u.medio + ' · Medio: de ' + u.medio + ' a ' + (u.alto - 1) + ' · Alto: ' + u.alto + ' o más';
+            const lectura = k === 'personas' ? f.valor + ' (cantidad estimada)' : f.valor + ' en una escala de 0 a ' + u.max;
+            return 'Lectura: ' + lectura + '. ' + rango + '.';
+        }
+
+        function htmlFactor(k, f, u) {
+            const n = f.nivel;
+            const barra = [0, 1, 2].map(i =>
+                '<span class="h-2 flex-1 rounded-full ' + (i <= n ? COLOR_BARRA[n] : 'bg-slate-200') + '"></span>').join('');
+            return '<div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-2">' +
+                '<div class="flex items-center space-x-3">' +
+                    '<div class="w-10 h-10 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-lg"><i class="fa-solid ' + ICONO_FACTOR[k] + '"></i></div>' +
+                    '<div><span class="text-[11px] text-slate-400 block">' + NOMBRE_FACTOR[k] + '</span>' +
+                    '<span class="text-sm font-black text-slate-800">' + PALABRAS[k][n] + '</span></div>' +
+                '</div>' +
+                '<div class="flex gap-1.5">' + barra + '</div>' +
+                '<p class="text-xs text-slate-500">' + DESCRIPCION_NIVEL[n] + '</p>' +
+                '<details class="text-[11px] text-slate-400"><summary class="cursor-pointer">Ver valor</summary>' +
+                    '<p class="mt-1">' + esc(detalleValor(k, f, u)) + '</p></details>' +
+                '</div>';
+        }
+
+        function htmlResumenSala(z, conEnlace) {
+            if (!z || z.vencido) {
+                return '<div class="rounded-2xl p-4 border bg-slate-50 border-slate-200 text-slate-700 space-y-1">' +
+                    '<p class="text-[11px] font-bold uppercase tracking-wider opacity-70">Sala de espera</p>' +
+                    '<p class="text-sm font-bold">Sin datos recientes</p>' +
+                    '<p class="text-xs">Por ahora no hay lecturas actualizadas.</p></div>';
+            }
+            return '<div class="rounded-2xl p-4 border space-y-1 ' + COLOR_TARJETA[z.nivel] + '">' +
+                '<p class="text-[11px] font-bold uppercase tracking-wider opacity-70">Sala de espera</p>' +
+                '<p class="text-sm font-bold">' + TITULO_NIVEL[z.nivel] + '</p>' +
+                '<p class="text-xs">' + esc(textoCausa(z)) + '</p>' +
+                '<p class="text-[11px] opacity-70">Actualizado a las ' + esc(z.hora) + '</p>' +
+                (conEnlace ? '<a href="#" onclick="switchView(\'recordatorio\'); return false;" class="inline-block text-xs font-bold underline mt-1">Más detalles</a>' : '') +
+                '</div>';
+        }
+
+        function zonaSala() {
+            return ambiente ? ambiente.zonas.find(z => z.zona === ZONA_SALA_APP) : null;
+        }
+
+        function pintarTarjetaMapa() {
+            const caja = document.getElementById('mapa-tarjeta');
+            if (puntoActivo === 'zona') {
+                caja.innerHTML = '<div class="rounded-2xl p-4 border bg-emerald-50 border-emerald-200 text-emerald-900 space-y-1">' +
+                    '<p class="text-sm font-bold">Zona baja de estímulos</p>' +
+                    '<p class="text-xs">Espacio tranquilo para esperar.</p></div>';
+            } else {
+                caja.innerHTML = htmlResumenSala(zonaSala(), true);
+            }
+        }
+
+        function pintarAmbiente() {
+            const z = zonaSala();
+            const sinDatos = !z || z.vencido;
+
+            const punto = document.getElementById('punto-sala');
+            punto.classList.remove('punto-verde', 'punto-ambar', 'punto-rojo', 'punto-gris');
+            punto.classList.add(sinDatos ? 'punto-gris' : CLASE_PUNTO[z.nivel]);
+            pintarTarjetaMapa();
+
+            document.getElementById('amb-resumen').innerHTML = htmlResumenSala(z, false);
+            document.getElementById('amb-factores').innerHTML = sinDatos ? '' :
+                ['luz', 'sonido', 'personas'].map(k => htmlFactor(k, z[k], ambiente.umbrales[k])).join('');
+        }
+
+        function elegirPunto(id) {
+            puntoActivo = id;
+            document.getElementById('punto-sala').classList.toggle('activo', id === 'sala');
+            document.getElementById('punto-zona').classList.toggle('activo', id === 'zona');
+            pintarTarjetaMapa();
+        }
+
+        async function cargarAmbiente() {
+            try {
+                const resp = await fetch(URL_SCRIPT, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ accion: "sensores", token: TOKEN })
+                });
+                const r = await resp.json();
+                if (r.status !== "success") throw new Error(r.message || "error");
+                ambiente = r;
+            } catch (e) { /* se mantiene lo último que se tenía */ }
+            pintarAmbiente();
+        }
+
+        function iniciarAmbiente() {
+            detenerAmbiente();
+            cargarAmbiente();
+            timerAmbiente = setInterval(cargarAmbiente, 20000);   // cada 20 segundos
+        }
+
+        function detenerAmbiente() {
+            clearInterval(timerAmbiente);
+            timerAmbiente = null;
+        }
         
     </script>
 </body>
