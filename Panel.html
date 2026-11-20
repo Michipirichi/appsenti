@@ -5,20 +5,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Panel de turnos</title>
   <style>
-    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 2rem 1rem; }
-    main { max-width: 360px; width: 100%; text-align: center; }
+    body { font-family: system-ui, sans-serif; display: flex; justify-content: center; padding: 1.5rem 1rem; color: #1e293b; }
+    main { max-width: 440px; width: 100%; text-align: center; }
+    h1 { margin: 0 0 .5rem; }
     input, button { font-size: 1.1rem; padding: .7rem; width: 100%; box-sizing: border-box; margin-top: .6rem; }
     button { color: #fff; border: 0; border-radius: 10px; cursor: pointer; }
     button:disabled { opacity: .6; cursor: wait; }
     #btn-consulta { background: #4A7C59; }
     #btn-meson { background: #2563eb; }
+    #btn-alertas { background: #475569; }
+    #btn-alertas.activo { background: #166534; }
     #turno { font-size: 5rem; font-weight: 700; margin: .5rem 0; }
+    hr { border: 0; border-top: 1px solid #e2e8f0; margin: 1.5rem 0 1rem; }
+
+    #sos-estado { font-size: .85rem; color: #64748b; margin: .6rem 0; }
+    .alerta { text-align: left; background: #fef2f2; border: 2px solid #ef4444; border-radius: 14px; padding: .9rem; margin: .8rem 0; }
+    .alerta .cab { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; }
+    .alerta .cab b { font-size: 1.15rem; color: #991b1b; }
+    .alerta .cab span { font-size: .85rem; color: #64748b; }
+    .alerta .donde { margin: .3rem 0 .6rem; font-size: .95rem; }
+    .plano { position: relative; width: 100%; max-width: 260px; margin: 0 auto; }
+    .plano img { width: 100%; height: auto; display: block; border-radius: 8px; }
+    .punto { position: absolute; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%;
+             background: #ef4444; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.4); }
+    .punto::after { content: ""; position: absolute; inset: -2px; border-radius: 50%; background: #ef4444;
+                    opacity: .5; animation: pulso 2.4s ease-in-out infinite; }
+    @keyframes pulso { 0%, 100% { transform: scale(1); opacity: .5; } 50% { transform: scale(2); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .punto::after { animation: none; opacity: .25; } }
+    .atender { background: #991b1b; margin-top: .8rem; }
   </style>
 </head>
 <body>
   <main>
     <h1>Panel de turnos</h1>
     <input id="clave" type="password" placeholder="Clave del personal">
+
+    <button id="btn-alertas">Activar alertas SOS</button>
+    <div id="sos-estado">Las alertas SOS están desactivadas.</div>
+    <div id="sos-lista"></div>
+
+    <hr>
     <button id="btn-consulta">Llamar siguiente · Consulta</button>
     <button id="btn-meson">Llamar siguiente · Mesón</button>
     <p id="mensaje">Aún no se ha llamado a nadie.</p>
@@ -27,12 +53,42 @@
 
   <script>
     // PEGA AQUÍ la URL /exec de tu implementación (la misma de index.html)
-    const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbyU_QfSKkDJgupIU6Rb1fZob_xpX3vuc1VFWowzMrsIMsb7Ya6kCR6vs-2rhyy10boFMg/exec";
+    const URL_SCRIPT = "PEGA_AQUI_TU_URL_EXEC";
+
+    // Posición de cada zona sobre el plano (en % desde la izquierda y desde arriba).
+    // Los nombres deben ser los mismos que usa la app y el script.
+    const PUNTOS_PLANO = {
+      "Sala de espera": [48, 30],
+      "Box 1": [31, 46],
+      "Box 2": [31, 63],
+      "Box 3": [64, 45],
+      "Box 4": [64, 59],
+      "Box 5": [64, 71.5],
+      "Box 6": [64, 84.5],
+      "Zona baja de estímulos": [24, 77],
+      "Entrada": [11.5, 22]
+    };
+
+    const INTERVALO_SOS_MS = 5000;      // cada cuánto se revisan las alertas
+    const REPETIR_SONIDO_MS = 30000;    // mientras haya alertas sin atender, vuelve a sonar cada 30 s
 
     const mensaje = document.getElementById("mensaje");
     const turno = document.getElementById("turno");
     const botones = [document.getElementById("btn-consulta"), document.getElementById("btn-meson")];
+    const btnAlertas = document.getElementById("btn-alertas");
+    const sosEstado = document.getElementById("sos-estado");
+    const sosLista = document.getElementById("sos-lista");
 
+    function esc(t) {
+      return String(t).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+
+    async function pedir(cuerpo) {
+      const r = await fetch(URL_SCRIPT, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify(cuerpo) });
+      return r.json();
+    }
+
+    // ---------- Llamar turnos ----------
     async function llamar(tipo) {
       const clave = document.getElementById("clave").value.trim();
       if (!clave) { mensaje.textContent = "Ingresa la clave del personal."; return; }
@@ -40,12 +96,7 @@
       mensaje.textContent = "Llamando…";
       turno.textContent = "";
       try {
-        const resp = await fetch(URL_SCRIPT, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ accion: "siguiente", tipo: tipo, token: clave })
-        });
-        const r = await resp.json();
+        const r = await pedir({ accion: "siguiente", tipo: tipo, token: clave });
         const nombre = tipo === "meson" ? "mesón" : "consulta";
         if (r.status === "success") {
           mensaje.textContent = "Llamando al turno de " + nombre + ":";
@@ -60,9 +111,132 @@
       }
       botones.forEach(b => b.disabled = false);
     }
-
     document.getElementById("btn-consulta").addEventListener("click", () => llamar("consulta"));
     document.getElementById("btn-meson").addEventListener("click", () => llamar("meson"));
+
+    // ---------- Alertas SOS ----------
+    let alertasActivas = false;
+    let timerSos = null;
+    let vistos = new Set();
+    let ultimoSonido = 0;
+    let pendientes = [];
+    let audio = null;
+    let pantalla = null;
+
+    function sonar() {
+      try {
+        if (audio) {
+          [0, 0.35, 0.7].forEach(t => {
+            const o = audio.createOscillator(), g = audio.createGain();
+            o.type = "sine"; o.frequency.value = 880;
+            g.gain.setValueAtTime(0.0001, audio.currentTime + t);
+            g.gain.exponentialRampToValueAtTime(0.4, audio.currentTime + t + 0.03);
+            g.gain.exponentialRampToValueAtTime(0.0001, audio.currentTime + t + 0.28);
+            o.connect(g); g.connect(audio.destination);
+            o.start(audio.currentTime + t); o.stop(audio.currentTime + t + 0.3);
+          });
+        }
+      } catch (e) { /* sin sonido */ }
+      if (navigator.vibrate) navigator.vibrate([300, 150, 300]);
+    }
+
+    function tarjeta(a) {
+      const p = PUNTOS_PLANO[a.zona];
+      const punto = p ? '<span class="punto" style="left:' + p[0] + '%;top:' + p[1] + '%"></span>' : "";
+      return '<div class="alerta">' +
+        '<div class="cab"><b>' + esc(a.nombre) + '</b><span>' + esc(a.rut) + '</span></div>' +
+        '<div class="donde">Hace ' + a.minutos + ' min (' + esc(a.hora) + ') · ' + esc(a.zona) + '</div>' +
+        '<div class="plano"><img src="plano.png" alt="Plano del recinto">' + punto + '</div>' +
+        '<button class="atender" data-id="' + a.id + '" data-rut="' + esc(a.rut) + '">Marcar atendida</button>' +
+        '</div>';
+    }
+
+    function pintarSos() {
+      sosLista.innerHTML = pendientes.map(tarjeta).join("");
+      document.title = pendientes.length ? "🚨 SOS (" + pendientes.length + ") · Panel" : "Panel de turnos";
+      sosEstado.textContent = pendientes.length
+        ? "Alertas activas: " + pendientes.length
+        : "Alertas SOS activas. Sin alertas pendientes.";
+    }
+
+    async function revisarSos() {
+      const clave = document.getElementById("clave").value.trim();
+      try {
+        const r = await pedir({ accion: "sos_lista", token: clave });
+        if (r.status !== "success") {
+          sosEstado.textContent = (r.message || "No se pudieron leer las alertas") + ". Revisa la clave.";
+          return;
+        }
+        pendientes = r.alertas;
+        const nuevas = pendientes.filter(a => !vistos.has(a.id));
+        nuevas.forEach(a => vistos.add(a.id));
+        pintarSos();
+        if (nuevas.length || (pendientes.length && Date.now() - ultimoSonido > REPETIR_SONIDO_MS)) {
+          sonar();
+          ultimoSonido = Date.now();
+        }
+      } catch (e) {
+        sosEstado.textContent = "Sin conexión con el servidor. Reintentando…";
+      }
+    }
+
+    async function mantenerPantalla() {
+      try { if ("wakeLock" in navigator) pantalla = await navigator.wakeLock.request("screen"); } catch (e) { /* no disponible */ }
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (alertasActivas && document.visibilityState === "visible") mantenerPantalla();
+    });
+
+    function activarAlertas() {
+      if (!document.getElementById("clave").value.trim()) { sosEstado.textContent = "Ingresa primero la clave del personal."; return; }
+      alertasActivas = true;
+      try {   // el navegador exige un toque del usuario para permitir sonidos
+        audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+        if (audio.state === "suspended") audio.resume();
+      } catch (e) { audio = null; }
+      btnAlertas.textContent = "Alertas SOS activadas (tocar para desactivar)";
+      btnAlertas.classList.add("activo");
+      sosEstado.textContent = "Revisando alertas…";
+      mantenerPantalla();
+      sonar();   // sonido de prueba: así sabes que se escucha
+      revisarSos();
+      timerSos = setInterval(revisarSos, INTERVALO_SOS_MS);
+    }
+
+    function desactivarAlertas() {
+      alertasActivas = false;
+      clearInterval(timerSos);
+      timerSos = null;
+      if (pantalla) { pantalla.release(); pantalla = null; }
+      btnAlertas.textContent = "Activar alertas SOS";
+      btnAlertas.classList.remove("activo");
+      sosEstado.textContent = "Las alertas SOS están desactivadas.";
+      sosLista.innerHTML = "";
+      pendientes = [];
+      vistos = new Set();
+      document.title = "Panel de turnos";
+    }
+
+    btnAlertas.addEventListener("click", () => alertasActivas ? desactivarAlertas() : activarAlertas());
+
+    sosLista.addEventListener("click", async (e) => {
+      const b = e.target.closest(".atender");
+      if (!b) return;
+      b.disabled = true;
+      try {
+        const r = await pedir({ accion: "sos_atender", token: document.getElementById("clave").value.trim(), id: Number(b.dataset.id), rut: b.dataset.rut });
+        if (r.status === "success" || r.status === "already") {
+          pendientes = pendientes.filter(a => String(a.id) !== b.dataset.id);
+          pintarSos();
+        } else {
+          b.disabled = false;
+          sosEstado.textContent = "No se pudo marcar como atendida.";
+        }
+      } catch (err) {
+        b.disabled = false;
+        sosEstado.textContent = "Sin conexión con el servidor.";
+      }
+    });
   </script>
 </body>
 </html>
