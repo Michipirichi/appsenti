@@ -517,11 +517,27 @@
                     Volver al Inicio
                 </button>
             </div>
+
             <!-- 10. SOS DE EMERGENCIA -->
             <div id="view-sos" class="view-section hidden flex flex-col items-center justify-center min-h-[70vh] text-center space-y-6">
                 <div class="space-y-1">
                     <h2 class="text-2xl font-black text-slate-800">Pincha si necesitas asistencia</h2>
-                    <p class="text-xs text-slate-500 max-w-xs mx-auto">Un asistente o profesional de salud acudirá a tu ubicación en la Zona Ambulatoria de inmediato.</p>
+                    <p class="text-xs text-slate-500 max-w-xs mx-auto">Se avisará al personal de salud, que acudirá a tu ubicación.</p>
+                </div>
+
+                <div class="w-full max-w-xs text-left">
+                    <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1">¿Dónde estás?</label>
+                    <select id="sos-zona" class="w-full p-3 text-xs bg-white border border-slate-200 rounded-xl">
+                        <option>Sala de espera</option>
+                        <option>Box 1</option>
+                        <option>Box 2</option>
+                        <option>Box 3</option>
+                        <option>Box 4</option>
+                        <option>Box 5</option>
+                        <option>Box 6</option>
+                        <option>Zona baja de estímulos</option>
+                        <option>Entrada</option>
+                    </select>
                 </div>
 
                 <div class="relative flex items-center justify-center my-6">
@@ -532,12 +548,9 @@
                     </button>
                 </div>
 
-                <div id="sos-status" class="hidden bg-red-50 border border-red-200 text-red-700 text-xs p-4 rounded-2xl w-full max-w-xs">
-                    <i class="fa-solid fa-circle-check text-red-600 text-sm mb-1 block"></i>
-                    Se ha enviado una alerta silenciosa al personal de la Zona Ambulatoria. Mantén la calma, un asistente está en camino.
-                </div>
+                <div id="sos-status" class="hidden text-xs p-4 rounded-2xl w-full max-w-xs"></div>
             </div>
-
+            
         </main>
 
     </div>
@@ -836,16 +849,48 @@ function elegirFecha(fecha) {
             }
         }
         
-        function triggerSOSAlert() {
-            const statusBox = document.getElementById('sos-status');
-            statusBox.classList.remove('hidden');
-            if (navigator.vibrate) {
-                navigator.vibrate([200, 100, 200]);
+
+
+        let sosEnviando = false;
+
+        async function triggerSOSAlert() {
+            if (sosEnviando) return;
+            const caja = document.getElementById('sos-status');
+            const zona = document.getElementById('sos-zona').value;
+            caja.classList.remove('hidden');
+
+            if (!currentUser.run) {
+                caja.className = 'bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded-2xl w-full max-w-xs';
+                caja.innerText = 'Primero inicia sesión para enviar la alerta.';
+                return;
             }
+
+            sosEnviando = true;
+            caja.className = 'bg-slate-50 border border-slate-200 text-slate-700 text-xs p-4 rounded-2xl w-full max-w-xs';
+            caja.innerText = 'Enviando alerta...';
+            if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+            try {
+                const resp = await fetch(URL_SCRIPT, {
+                    method: "POST",
+                    headers: { "Content-Type": "text/plain;charset=utf-8" },
+                    body: JSON.stringify({ accion: "sos", token: TOKEN, rut: currentUser.run, zona: zona })
+                });
+                const r = await resp.json();
+                if (r.status !== "success" && r.status !== "already") throw new Error(r.message || "error");
+
+                caja.className = 'bg-red-50 border border-red-200 text-red-700 text-xs p-4 rounded-2xl w-full max-w-xs';
+                caja.innerHTML = '<i class="fa-solid fa-circle-check text-red-600 text-sm mb-1 block"></i>' +
+                    (r.status === 'already' ? 'Tu alerta ya estaba enviada' + (r.hora ? ' (a las ' + esc(r.hora) + ')' : '') + '. ' : 'Alerta enviada a las ' + esc(r.hora) + '. ') +
+                    'Mantén la calma: el personal fue avisado y acudirá a tu ubicación (' + esc(zona) + ').';
+            } catch (e) {
+                caja.className = 'bg-amber-50 border border-amber-200 text-amber-900 text-xs p-4 rounded-2xl w-full max-w-xs';
+                caja.innerText = 'No se pudo enviar la alerta (' + e.message + '). Pide ayuda a una persona cercana o acércate al mesón.';
+            }
+            sosEnviando = false;
         }
 
-
-
+        
         const URL_SCRIPT = "https://script.google.com/macros/s/AKfycbyU_QfSKkDJgupIU6Rb1fZob_xpX3vuc1VFWowzMrsIMsb7Ya6kCR6vs-2rhyy10boFMg/exec";
         const TOKEN = "1234";
         let timerEstado = null;
