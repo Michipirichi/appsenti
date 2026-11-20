@@ -12,7 +12,7 @@ const char* password = "TU_CONTRASEÑA_WIFI";   // Contraseña de tu WiFi
 // 2. URL DE GOOGLE APPS SCRIPT
 // ==========================================
 // Pega aquí la URL que obtuviste al presionar Implementar
-const char* serverUrl = "https://script.google.com/macros/s/TU_SCRIPT_ID/exec";
+const char* serverUrl = "https://script.google.com/macros/s/AKfycbzTT8MtkzZX0NeMsUZjRsxsmzPl4pBbJ4-FYgv5fz1i3QEhU7Efv4XRHF8cKXxBWc6hLQ/exec";
 
 // ==========================================
 // 3. PINES DE SENSORES EN EL ESP32
