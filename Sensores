@@ -5,36 +5,53 @@
 // ==========================================
 // 1. CONFIGURACIÓN DE TU RED WIFI
 // ==========================================
-const char* ssid = "TU_NOMBRE_DE_WIFI";       // Nombre de tu red WiFi (2.4 GHz)
-const char* password = "TU_CONTRASEÑA_WIFI";   // Contraseña de tu WiFi
+const char* ssid = "Michi_2701";       // Nombre de tu red WiFi (2.4 GHz). Mejor: el punto de acceso de tu celular
+const char* password = "Isaias53";   // Contraseña de tu WiFi
 
 // ==========================================
-// 2. URL DE GOOGLE APPS SCRIPT
+// 2. SCRIPT DE GOOGLE (el mismo que usa la app)
 // ==========================================
-// Pega aquí la URL que obtuviste al presionar Implementar
+// Debe ser IGUAL a la URL_SCRIPT de index.html. Si publicas una implementación nueva, cámbiala aquí también.
 const char* serverUrl = "https://script.google.com/macros/s/AKfycbzTT8MtkzZX0NeMsUZjRsxsmzPl4pBbJ4-FYgv5fz1i3QEhU7Efv4XRHF8cKXxBWc6hLQ/exec";
+const char* TOKEN_SENSORES = "9012";    // Debe ser igual al TOKEN_SENSORES del script de Google
+const char* ZONA = "Sala de espera";    // Debe ser igual a la zona que muestra la app
 
 // ==========================================
 // 3. PINES DE SENSORES EN EL ESP32
 // ==========================================
 // Ultrasónicos (Conteo de personas)
-const int TRIG_A = 25; // Sensor Exterior (Entrada)
+// OJO: el pin ECHO entrega 5 V; conéctalo al ESP32 con un divisor de voltaje (1 kΩ + 2 kΩ).
+const int TRIG_A = 25; // Sensor Exterior (lado de la entrada)
 const int ECHO_A = 26;
-const int TRIG_B = 27; // Sensor Interior (Salida)
+const int TRIG_B = 27; // Sensor Interior (lado de la sala)
 const int ECHO_B = 14;
 
 // Sensores Analógicos
 const int PIN_LUZ = 34;    // GPIO 34
 const int PIN_SONIDO = 35; // GPIO 35
 
-// Variables de control
-int cantidadPersonas = 0;
-const int DISTANCIA_UMBRAL = 30; // Distancia en cm para detectar paso
-unsigned long ultimoPaso = 0;
-const unsigned long DELAY_DETECCION = 800; // ms entre conteos
+// ==========================================
+// 4. AJUSTES
+// ==========================================
+const int DISTANCIA_UMBRAL = 30;                       // cm. Para la maqueta, bájalo (por ejemplo 8 a 15 cm)
+const unsigned long VENTANA_SECUENCIA = 1500;          // ms máximos entre un sensor y el otro
+const unsigned long INTERVALO_ENVIO = 30000;           // Envía a Google Sheets cada 30 segundos
+const unsigned long VENTANA_SONIDO_US = 20000;         // Se mide la onda del micrófono durante 20 ms
 
+// ==========================================
+// VARIABLES
+// ==========================================
+int cantidadPersonas = 0;
+bool aPrev = false;
+bool bPrev = false;
+unsigned long tA = 0;   // último momento en que A detectó (0 = nada pendiente)
+unsigned long tB = 0;
 unsigned long ultimoEnvio = 0;
-const unsigned long INTERVALO_ENVIO = 3000; // Envía a Google Sheets cada 3 segundos
+
+// Se promedian las lecturas entre un envío y el siguiente
+unsigned long sumaLuz = 0;
+unsigned long sumaSonido = 0;
+unsigned long nMuestras = 0;
 
 void setup() {
   Serial.begin(115200);
@@ -58,68 +75,113 @@ void setup() {
   Serial.println("\n¡Conectado a WiFi con éxito!");
   Serial.print("IP: ");
   Serial.println(WiFi.localIP());
+  ultimoEnvio = millis();
 }
 
 void loop() {
-  // 1. Lectura de sensores de luz y sonido
-  int nivelLuz = analogRead(PIN_LUZ);
-  int nivelSonido = analogRead(PIN_SONIDO);
+  // 1. Luz y sonido (se acumulan para promediar)
+  sumaLuz += analogRead(PIN_LUZ);
+  sumaSonido += amplitudSonido();
+  nMuestras++;
 
   // 2. Medición de distancias en los ultrasónicos
   long distA = medirDistancia(TRIG_A, ECHO_A);
+  delay(30);  // evita que un sensor "escuche" al otro
   long distB = medirDistancia(TRIG_B, ECHO_B);
 
-  // 3. Lógica de conteo de entrada / salida
-  if (millis() - ultimoPaso > DELAY_DETECCION) {
-    if (distA > 0 && distA < DISTANCIA_UMBRAL) {
-      cantidadPersonas++;
-      ultimoPaso = millis();
-      Serial.println("-> Alguien entró. Total personas: " + String(cantidadPersonas));
-    } 
-    else if (distB > 0 && distB < DISTANCIA_UMBRAL) {
-      if (cantidadPersonas > 0) {
-        cantidadPersonas--;
-      }
-      ultimoPaso = millis();
-      Serial.println("<- Alguien salió. Total personas: " + String(cantidadPersonas));
-    }
-  }
+  // 3. Conteo de entrada / salida (con sentido)
+  contarPasos(distA > 0 && distA < DISTANCIA_UMBRAL, distB > 0 && distB < DISTANCIA_UMBRAL);
 
   // 4. Envío periódico a la base de datos (Google Sheets)
   if (millis() - ultimoEnvio > INTERVALO_ENVIO) {
     if (WiFi.status() == WL_CONNECTED) {
+      int nivelLuz = (int)(sumaLuz / nMuestras);
+      int nivelSonido = (int)(sumaSonido / nMuestras);
+      sumaLuz = 0;
+      sumaSonido = 0;
+      nMuestras = 0;
       enviarAGoogleSheets(nivelLuz, nivelSonido, cantidadPersonas);
     } else {
-      Serial.println("Error: Conexión WiFi perdida.");
+      Serial.println("Error: Conexión WiFi perdida. Reconectando...");
+      WiFi.reconnect();
     }
     ultimoEnvio = millis();
   }
 
-  delay(100);
+  delay(30);
+}
+
+// Entrada = primero A (exterior) y luego B (interior). Salida = primero B y luego A.
+void contarPasos(bool a, bool b) {
+  unsigned long ahora = millis();
+  bool registrado = false;
+
+  if (a && !aPrev) {
+    tA = ahora;
+    if (tB != 0 && ahora - tB < VENTANA_SECUENCIA) {
+      if (cantidadPersonas > 0) cantidadPersonas--;
+      Serial.println("<- Alguien salió. Total personas: " + String(cantidadPersonas));
+      tA = 0;
+      tB = 0;
+      registrado = true;
+    }
+  }
+  if (!registrado && b && !bPrev) {
+    tB = ahora;
+    if (tA != 0 && ahora - tA < VENTANA_SECUENCIA) {
+      cantidadPersonas++;
+      Serial.println("-> Alguien entró. Total personas: " + String(cantidadPersonas));
+      tA = 0;
+      tB = 0;
+    }
+  }
+
+  aPrev = a;
+  bPrev = b;
 }
 
 // Función auxiliar para calcular distancia en cm
 long medirDistancia(int trigPin, int echoPin) {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
   digitalWrite(trigPin, HIGH);
   delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  long duracion = pulseIn(echoPin, HIGH, 30000); // Timeout 30ms
+  long duracion = pulseIn(echoPin, HIGH, 6000); // Timeout 6 ms (unos 100 cm)
   if (duracion == 0) return 999;
-  
+
   return (duracion * 0.034) / 2;
+}
+
+// Un micrófono analógico entrega la onda de sonido, no el volumen.
+// Por eso se mira la onda durante 20 ms y se mide cuánto "sube y baja" (amplitud).
+int amplitudSonido() {
+  int minimo = 4095;
+  int maximo = 0;
+  unsigned long inicio = micros();
+  while (micros() - inicio < VENTANA_SONIDO_US) {
+    int v = analogRead(PIN_SONIDO);
+    if (v < minimo) minimo = v;
+    if (v > maximo) maximo = v;
+  }
+  return maximo - minimo;
 }
 
 // Función encargada del envío HTTP POST a Google Apps Script
 void enviarAGoogleSheets(int luz, int sonido, int personas) {
   HTTPClient http;
-  
+
   http.begin(serverUrl);
   http.addHeader("Content-Type", "application/json");
   http.setFollowRedirects(HTTPC_STRICT_FOLLOW_REDIRECTS);
 
   // Creación del paquete JSON
-  StaticJsonDocument<200> doc;
+  StaticJsonDocument<256> doc;
+  doc["accion"] = "lectura";
+  doc["token"] = TOKEN_SENSORES;
+  doc["zona"] = ZONA;
+  doc["origen"] = "real";
   doc["luz"] = luz;
   doc["sonido"] = sonido;
   doc["personas"] = personas;
@@ -127,11 +189,16 @@ void enviarAGoogleSheets(int luz, int sonido, int personas) {
   String jsonString;
   serializeJson(doc, jsonString);
 
+  Serial.println("Luz: " + String(luz) + " | Sonido: " + String(sonido) + " | Personas: " + String(personas));
+
   // Envío POST
   int httpCode = http.POST(jsonString);
-  
-  if (httpCode > 0) {
+
+  // Google responde 200, o 302 (redirección): en los dos casos la lectura ya quedó guardada
+  if (httpCode == 200 || httpCode == 302) {
     Serial.printf("Base de datos actualizada | HTTP Code: %d\n", httpCode);
+  } else if (httpCode > 0) {
+    Serial.printf("El servidor respondió con código %d\n", httpCode);
   } else {
     Serial.printf("Error al enviar a Google Sheets: %s\n", http.errorToString(httpCode).c_str());
   }
