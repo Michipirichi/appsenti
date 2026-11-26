@@ -148,7 +148,8 @@
         </header>
 
         <!-- CONTENEDOR DE PANTALLAS -->
-        <main class="flex-1 overflow-y-auto p-4 space-y-4 relative">
+        <main class="flex-1 overflow-y-auto p-4 pb-20 space-y-4 relative">).
+
 
             <!-- 1. PANTALLA DE INICIO / LOGIN -->
             <div id="view-login" class="view-section flex flex-col justify-center items-center min-h-[85vh] py-6">
@@ -585,6 +586,32 @@
                 </div>
 
                 <div id="sos-status" class="hidden text-xs p-4 rounded-2xl w-full max-w-xs"></div>
+            </div>
+    
+            <!-- BOTÓN FLOTANTE DE AYUDA -->
+            <button id="btn-ayuda" type="button" onclick="abrirTutorial()" aria-label="Cómo usar la app"
+                class="absolute bottom-4 right-4 z-40 w-12 h-12 rounded-full bg-[#4A7C59] hover:bg-[#3d674b] text-white text-xl font-bold shadow-lg border-2 border-white flex items-center justify-center">
+                <i class="fa-solid fa-question"></i>
+            </button>
+     
+            <!-- TUTORIAL -->
+            <div id="tutorial" class="hidden absolute inset-0 z-[60] bg-black/50 flex items-center justify-center p-5"
+                onclick="if (event.target === this) cerrarTutorial()">
+                <div role="dialog" aria-modal="true" aria-labelledby="tut-titulo" class="w-full max-w-sm bg-white rounded-3xl p-6 shadow-2xl space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span id="tut-paso" class="text-[11px] font-bold uppercase tracking-wider text-slate-400"></span>
+                        <button id="tut-cerrar" type="button" onclick="cerrarTutorial()" class="text-xs font-semibold text-slate-500 underline px-2 py-2">Cerrar</button>
+                    </div>
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-[#4A7C59] flex items-center justify-center text-2xl">
+                        <i id="tut-icono" class="fa-solid fa-shield-heart"></i>
+                    </div>
+                    <h3 id="tut-titulo" class="text-lg font-black text-slate-800"></h3>
+                    <p id="tut-texto" class="text-sm text-slate-600 leading-relaxed"></p>
+                    <div class="flex gap-2 pt-1">
+                        <button id="tut-anterior" type="button" onclick="pasoAnterior()" class="flex-1 py-3 rounded-xl text-xs font-semibold border border-slate-200 text-slate-600">Anterior</button>
+                        <button id="tut-siguiente" type="button" onclick="pasoSiguiente()" class="flex-1 py-3 rounded-xl text-xs font-semibold bg-[#4A7C59] text-white">Siguiente</button>
+                    </div>
+                </div>
             </div>
             
         </main>
@@ -1406,6 +1433,74 @@ function elegirFecha(fecha) {
             clearInterval(timerAmbiente);
             timerAmbiente = null;
         }
+
+        // ====== TUTORIAL (botón flotante "?") ======
+        // Para cambiar los pasos, edita este listado: cada paso tiene un ícono, un título y un texto.
+        const PASOS_TUTORIAL = [
+            { icono: 'fa-shield-heart', titulo: 'Bienvenida a Senti',
+              texto: 'Senti te ayuda a organizar tu visita al hospital de forma tranquila. Para entrar, escribe tu RUN. Si es tu primera vez, toca «Regístrate aquí».' },
+            { icono: 'fa-calendar-days', titulo: 'Pide y revisa tus citas',
+              texto: 'En «Agendar Cita» eliges una especialidad y un día disponible. En «Mis Citas» ves todas las que tienes.' },
+            { icono: 'fa-ticket', titulo: 'Avisa tu llegada',
+              texto: 'Cuando llegues, entra a «Toma de Turnos». Elige «Vengo a una cita» si tienes hora, o «Necesito atención en el mesón» para otro trámite. Te mostraremos tu número. Mantén la app abierta: aquí te avisaremos cuando sea tu turno.' },
+            { icono: 'fa-map-location-dot', titulo: 'Mira cómo está el ambiente',
+              texto: 'En «Mapa & Zonas» verás la sala de espera. Verde: tranquila. Ámbar: moderada. Roja: con mucho ruido, luz o gente. Gris: sin datos por ahora. El punto verde fijo es la zona baja de estímulos, un lugar tranquilo para esperar. Toca los puntos para ver más.' },
+            { icono: 'fa-hand-holding-heart', titulo: 'Si necesitas ayuda',
+              texto: 'El botón rojo S.O.S avisa al personal. Elige dónde estás y púlsalo. Úsalo solo si necesitas ayuda.' }
+        ];
+        let pasoTutorial = 0;
+ 
+        function tutorialAbierto() {
+            return !document.getElementById('tutorial').classList.contains('hidden');
+        }
+ 
+        function mostrarPasoTutorial() {
+            const p = PASOS_TUTORIAL[pasoTutorial];
+            const ultimo = pasoTutorial === PASOS_TUTORIAL.length - 1;
+            document.getElementById('tut-paso').innerText = 'Paso ' + (pasoTutorial + 1) + ' de ' + PASOS_TUTORIAL.length;
+            document.getElementById('tut-icono').className = 'fa-solid ' + p.icono;
+            document.getElementById('tut-titulo').innerText = p.titulo;
+            document.getElementById('tut-texto').innerText = p.texto;
+            document.getElementById('tut-siguiente').innerText = ultimo ? 'Entendido' : 'Siguiente';
+            const anterior = document.getElementById('tut-anterior');
+            anterior.disabled = pasoTutorial === 0;
+            anterior.classList.toggle('opacity-40', pasoTutorial === 0);
+        }
+ 
+        function abrirTutorial() {
+            pasoTutorial = 0;
+            mostrarPasoTutorial();
+            document.getElementById('tutorial').classList.remove('hidden');
+            document.getElementById('tut-cerrar').focus();
+        }
+ 
+        function cerrarTutorial() {
+            document.getElementById('tutorial').classList.add('hidden');
+            document.getElementById('btn-ayuda').focus();
+        }
+ 
+        function pasoSiguiente() {
+            if (pasoTutorial < PASOS_TUTORIAL.length - 1) { pasoTutorial++; mostrarPasoTutorial(); }
+            else cerrarTutorial();
+        }
+ 
+        function pasoAnterior() {
+            if (pasoTutorial > 0) { pasoTutorial--; mostrarPasoTutorial(); }
+        }
+ 
+        // Escape cierra la guía; Tab se queda dentro de ella
+        document.addEventListener('keydown', function (e) {
+            if (!tutorialAbierto()) return;
+            if (e.key === 'Escape') { cerrarTutorial(); return; }
+            if (e.key === 'Tab') {
+                const f = ['tut-cerrar', 'tut-anterior', 'tut-siguiente']
+                    .map(id => document.getElementById(id)).filter(b => !b.disabled);
+                const i = f.indexOf(document.activeElement);
+                const siguiente = e.shiftKey ? (i <= 0 ? f.length - 1 : i - 1) : (i === f.length - 1 ? 0 : i + 1);
+                f[siguiente].focus();
+                e.preventDefault();
+            }
+        });
         
     </script>
 </body>
