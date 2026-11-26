@@ -12,7 +12,7 @@ const char* password = "Isaias53";   // Contraseña de tu WiFi
 // 2. SCRIPT DE GOOGLE (el mismo que usa la app)
 // ==========================================
 // Debe ser IGUAL a la URL_SCRIPT de index.html. Si publicas una implementación nueva, cámbiala aquí también.
-const char* serverUrl = "https://script.google.com/macros/s/AKfycbzTT8MtkzZX0NeMsUZjRsxsmzPl4pBbJ4-FYgv5fz1i3QEhU7Efv4XRHF8cKXxBWc6hLQ/exec";
+const char* serverUrl = "https://script.google.com/macros/s/AKfycbwCduWdf8B008rOjOxmgalCSM3pqXcirAmv96ZlFoWL-qPdghz2rFAIxA8bKWQN-MjX6w/exec";
 const char* TOKEN_SENSORES = "9012";    // Debe ser igual al TOKEN_SENSORES del script de Google
 const char* ZONA = "Sala de espera";    // Debe ser igual a la zona que muestra la app
 
