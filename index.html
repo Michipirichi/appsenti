@@ -1441,40 +1441,41 @@ function elegirFecha(fecha) {
         }
 
         // ====== TUTORIAL (botón flotante "?") ======
-
-        // Qué pantalla corresponde según haya o no una sesión iniciada
-        //  - Sin sesión: solo "login" y "registro-ficha".
-        //  - Con sesión: todas, menos "registro-ficha" y "login".
-        function vistaSegunSesion(viewName) {
-            const conSesion = !!currentUser.run;
-            if (!conSesion) return viewName === 'registro-ficha' ? 'registro-ficha' : 'login';
-            return (viewName === 'registro-ficha' || viewName === 'login') ? 'menu' : viewName;
-        }
- 
-        
-        // Para cambiar los pasos, edita este listado: cada paso tiene un ícono, un título y un texto.
-        const PASOS_TUTORIAL = [
+        // Antes de iniciar sesión se muestra solo la guía para registrarse e ingresar.
+        // Dentro de la app se muestran todas las demás (sin la de registrarse).
+        // Para cambiar los pasos, edita estos dos listados: cada paso tiene un ícono, un título y un texto.
+        const PASOS_ANTES_DE_INGRESAR = [
             { icono: 'fa-shield-heart', titulo: 'Bienvenida a Senti',
-              texto: 'Senti te ayuda a organizar tu visita al hospital de forma tranquila. Para entrar, escribe tu RUN. Si es tu primera vez, toca «Regístrate aquí».' },
+              texto: 'Senti te ayuda a organizar tu visita al hospital de forma tranquila. Si ya te registraste, escribe tu RUN y toca «Ingresar». Si es tu primera vez, toca «Regístrate aquí».' },
+            { icono: 'fa-user-plus', titulo: 'Cómo registrarte',
+              texto: 'Solo son obligatorios tu RUN, tu nombre y tu teléfono. Los datos de salud y el contacto de emergencia son opcionales. Al terminar, toca «Registrarme» y entrarás a la app.' }
+        ];
+        const PASOS_DENTRO_DE_LA_APP = [
             { icono: 'fa-calendar-days', titulo: 'Pide y revisa tus citas',
               texto: 'En «Agendar Cita» eliges una especialidad y un día disponible. En «Mis Citas» ves todas las que tienes.' },
             { icono: 'fa-ticket', titulo: 'Avisa tu llegada',
-              texto: 'Cuando llegues, entra a «Avisa tu llegada». Elige «Vengo a una cita» si tienes hora, o «Necesito atención en el mesón» para otro trámite. Te mostraremos tu número. Mantén la app abierta: aquí te avisaremos cuando sea tu turno.' },
+              texto: 'Cuando llegues, entra a «Toma de Turnos». Elige «Vengo a una cita» si tienes hora, o «Necesito atención en el mesón» para otro trámite. Te mostraremos tu número. Mantén la app abierta: aquí te avisaremos cuando sea tu turno.' },
             { icono: 'fa-map-location-dot', titulo: 'Mira cómo está el ambiente',
-              texto: 'En «Mapa del recinto» verás la sala de espera. Verde: tranquila. Amarilla: moderada. Roja: con mucho ruido, luz o gente. Gris: sin datos por ahora. El punto verde fijo es la zona baja de estímulos, un lugar tranquilo para esperar. Toca los puntos para ver más.' },
+              texto: 'En «Mapa & Zonas» verás la sala de espera. Verde: tranquila. Ámbar: moderada. Roja: con mucho ruido, luz o gente. Gris: sin datos por ahora. El punto verde fijo es la zona baja de estímulos, un lugar tranquilo para esperar. Toca los puntos para ver más.' },
             { icono: 'fa-hand-holding-heart', titulo: 'Si necesitas ayuda',
               texto: 'El botón rojo S.O.S avisa al personal. Elige dónde estás y púlsalo. Úsalo solo si necesitas ayuda.' }
         ];
+        let pasosTutorial = PASOS_ANTES_DE_INGRESAR;
         let pasoTutorial = 0;
+ 
+        // Según haya o no una sesión iniciada
+        function pasosSegunSesion() {
+            return currentUser.run ? PASOS_DENTRO_DE_LA_APP : PASOS_ANTES_DE_INGRESAR;
+        }
  
         function tutorialAbierto() {
             return !document.getElementById('tutorial').classList.contains('hidden');
         }
  
         function mostrarPasoTutorial() {
-            const p = PASOS_TUTORIAL[pasoTutorial];
-            const ultimo = pasoTutorial === PASOS_TUTORIAL.length - 1;
-            document.getElementById('tut-paso').innerText = 'Paso ' + (pasoTutorial + 1) + ' de ' + PASOS_TUTORIAL.length;
+            const p = pasosTutorial[pasoTutorial];
+            const ultimo = pasoTutorial === pasosTutorial.length - 1;
+            document.getElementById('tut-paso').innerText = 'Paso ' + (pasoTutorial + 1) + ' de ' + pasosTutorial.length;
             document.getElementById('tut-icono').className = 'fa-solid ' + p.icono;
             document.getElementById('tut-titulo').innerText = p.titulo;
             document.getElementById('tut-texto').innerText = p.texto;
@@ -1485,6 +1486,7 @@ function elegirFecha(fecha) {
         }
  
         function abrirTutorial() {
+            pasosTutorial = pasosSegunSesion();
             pasoTutorial = 0;
             mostrarPasoTutorial();
             document.getElementById('tutorial').classList.remove('hidden');
@@ -1497,7 +1499,7 @@ function elegirFecha(fecha) {
         }
  
         function pasoSiguiente() {
-            if (pasoTutorial < PASOS_TUTORIAL.length - 1) { pasoTutorial++; mostrarPasoTutorial(); }
+            if (pasoTutorial < pasosTutorial.length - 1) { pasoTutorial++; mostrarPasoTutorial(); }
             else cerrarTutorial();
         }
  
